@@ -32,6 +32,7 @@ The repository baseline is established by TICKET-001. Application scaffolding an
 ├── backend/       # FastAPI application (later ticket)
 ├── frontend/      # React/Vite application (later ticket)
 ├── tests/         # Shared and integration tests
+├── docs/          # Shared API and implementation contracts
 ├── SPEC.md        # Product and architecture specification
 └── .claude/
     └── ticket.md  # Ordered implementation tickets
@@ -47,6 +48,10 @@ SPEC.md
 ```
 
 The environment template is [.env.example](.env.example). Copy it to `.env` only when local application configuration is needed. Do not commit `.env` or API keys.
+
+### Local repository input
+
+V1 uses a browser-friendly ZIP upload rather than accepting arbitrary server filesystem paths. The frontend will send a `repository` field using `multipart/form-data` to the session repository endpoint. Upload and extraction limits, safe archive rules, session states, and error codes are documented in [docs/api-contract.md](docs/api-contract.md). Ingestion and indexing are implemented by later tickets.
 
 ## Development principles
 

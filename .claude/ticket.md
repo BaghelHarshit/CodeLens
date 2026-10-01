@@ -22,7 +22,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** the baseline commit is clean, reproducible, and contains no secrets or generated artifacts.
 
 ### TICKET-002 — Define local repository input contract
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 001
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 001
 - Choose and document the simplest upload/directory transport.
 - Define archive types, size limits, path normalization, ignored paths, invalid-input behavior, and indexing states.
 - **Done when:** frontend and backend share one secure, documented contract.
