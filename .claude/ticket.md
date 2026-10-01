@@ -13,7 +13,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 ## Phase 0 — Foundation
 
 ### TICKET-001 — Git project setup and baseline
-- **Status:** TODO | **Priority:** P0 | **Depends on:** None
+- **Status:** DONE | **Priority:** P0 | **Depends on:** None
 - Initialize Git and the initial branch.
 - Add `.gitignore` for Python, Node, build output, IDE files, environment files, temporary sessions, FAISS artifacts, and logs.
 - Add a safe `.env.example` containing names only; never commit secrets.
