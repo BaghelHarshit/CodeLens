@@ -1,0 +1,62 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+.vite/
+.npm/
+*.tsbuildinfo
+
+# IDE and OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Runtime output
+*.log
+logs/
+tmp/
+temp/
+
+# CodeLens temporary session and vector artifacts
+.codelens/
+.codelens-data/
+**/sessions/
+**/index/
+**/metadata/
+**/faiss/
+*.faiss
+*.index
+
+# Test and tooling output
+.pytest_cache/
+.tox/
+.nox/
+.mutmut-cache/
