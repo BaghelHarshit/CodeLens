@@ -28,14 +28,14 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** frontend and backend share one secure, documented contract.
 
 ### TICKET-003 — Scaffold backend and frontend
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 001, 002
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 001, 002
 - Configure Python dependencies: FastAPI, Uvicorn, Tree-sitter, FAISS, OpenAI/LangChain, validation, and tests.
 - Scaffold React + TypeScript + Vite and scripts.
 - Add configuration loading, environment validation, CORS, health endpoint, and minimal UI shell.
 - **Done when:** both apps install and run with documented commands.
 
 ### TICKET-004 — Establish quality gates
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 003
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 003
 - Configure backend tests, formatting, linting, and type checks; configure frontend tests, linting, and type checks.
 - Add a safe fixture repository, offline fake providers, and CI if appropriate.
 - **Done when:** one command runs checks without OpenAI credentials.
@@ -43,34 +43,34 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 ## Phase 1 — Sessions and indexing
 
 ### TICKET-005 — Temporary session manager
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 003, 004
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 003, 004
 - Implement secure random IDs, lookup, state transitions, and deletion.
 - Create isolated `repo/`, `index/`, and `metadata/` workspaces.
 - Make cleanup safe and idempotent; never delete outside a session root.
 - **Done when:** session creation, isolation, lifecycle errors, and cleanup are tested.
 
 ### TICKET-006 — Secure repository ingestion
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 002, 005
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 002, 005
 - Implement `POST /api/session/{session_id}/repository`.
 - Validate type, size, empty input, traversal, symlinks, collisions, and outside writes.
 - Exclude configured generated/vendor paths as appropriate; never execute repository code.
 - **Done when:** valid fixtures work and malicious/invalid input fails safely.
 
 ### TICKET-007 — Source-file discovery
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 006
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 006
 - Map supported extensions to languages/grammars; skip binaries, oversized, generated, vendor, and unsupported files.
 - Record counts, limits, and skip reasons.
 - **Done when:** discovery is deterministic, bounded, and tested.
 
 ### TICKET-008 — Tree-sitter parser
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 007
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 007
 - Extract files, classes, functions, methods, and relevant declarations.
 - Capture source, relative path, symbol name/type, language, start line, and end line.
 - Continue after malformed files and record diagnostics.
 - **Done when:** nested symbols, multiple languages, empty files, and syntax errors are covered.
 
 ### TICKET-009 — Code chunking and metadata
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 008
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 008
 - Use meaningful symbols as primary chunks and file/fallback chunks where needed.
 - Bound oversized-symbol splitting while retaining parent metadata.
 - Define stable IDs and safe serialization; never expose absolute server paths.
@@ -213,6 +213,8 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Priority:** P2 | **Depends on:** 029
 - Add optional GitHub URL input through the GitHub API with authentication, URL validation, permissions, rate limits, and size limits.
 - Reuse the existing session, ingestion, parser, embeddings, FAISS, Q&A, and review pipeline; do not create a parallel architecture.
+- For a changed GitHub revision, compare the current and previous indexed revisions where available; reuse unchanged embeddings, replace embeddings for added or modified chunks, and remove embeddings for deleted chunks. The repository source does not need permanent storage.
+- Keep fetched source and embeddings temporary for the active analysis unless a later persistence design explicitly requires retaining embeddings and revision/chunk metadata. Do not require durable snapshots or embeddings for the initial GitHub workflow.
 - **Done when:** GitHub is optional, local behavior is unchanged, and the feature does not expand V1 scope.
 
 ## Recommended execution order

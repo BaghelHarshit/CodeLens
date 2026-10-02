@@ -73,23 +73,50 @@ implementation.
 
 ## 3.2 Repository Storage
 
-Repository files are stored temporarily on the server filesystem for the
-duration of the session.
+CodeLens does not need to permanently store the repository source. The
+user asks questions about the current state of the repository and works
+with that uploaded or fetched state during the active analysis session.
+
+For a local repository upload, repository files are stored temporarily on
+the server filesystem for the duration of the session. The local upload is
+assumed to be the repository state the user wants to understand; the user
+does not repeatedly upload it as the repository changes during that
+session.
 
 Conceptually:
 
 ``` text
 /tmp/codelens/
     <session_id>/
-        repo/
-        index/
-        metadata/
+        repo/       # temporary local upload or GitHub checkout
+        index/      # temporary FAISS index
+        metadata/   # temporary chunk metadata
 ```
 
-The repository is not permanently stored.
+The local repository source is not permanently stored. When the session
+ends or is explicitly deleted, the temporary repository, index, and
+metadata should be cleaned up.
 
-When the session ends or is explicitly deleted, temporary session data
-should be cleaned up.
+GitHub retrieval is a deferred feature. For that feature, CodeLens does
+not need to retain the repository source permanently. The fetched
+repository and its embeddings may remain temporary for the active analysis
+session. When a newer GitHub revision is processed, compare it with the
+previous indexed revision when available, reuse embeddings for unchanged
+chunks, replace embeddings for added or modified chunks, and remove
+embeddings for deleted chunks. Store the resulting embedding set for the
+current analysis/revision. Durable embeddings across sessions are optional
+future behavior, not a requirement of the GitHub URL feature. This applies
+only to the deferred GitHub URL workflow, not to the local-upload V1
+workflow.
+
+The local-upload workflow does not need repository refresh handling: the
+user uploads the repository state they want to understand and work with,
+and does not repeatedly upload it during that analysis session.
+
+If a future implementation needs to compare GitHub revisions across
+separate sessions, it may store only the embedding set and revision/chunk
+metadata, subject to the future persistence and privacy design. The source
+repository still does not need to be retained.
 
 ------------------------------------------------------------------------
 
@@ -113,8 +140,8 @@ A database may be introduced in a future version to support:
 -   User accounts
 -   Chat history
 -   Previous PR reviews
--   Persistent embeddings
--   Incremental repository indexing
+-   Optional embedding retention for deferred GitHub revision comparison
+-   Incremental indexing for changed GitHub revisions
 
 This is a future extension, not part of the current implementation.
 

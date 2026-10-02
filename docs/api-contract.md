@@ -31,6 +31,10 @@ The backend may expose these values through configuration, but it must never all
 
 ## Safe archive handling
 
+The server treats every archive as untrusted data. The implemented upload endpoint validates the complete archive in a session-local staging directory and replaces `repo/` only after validation and extraction succeed; failures remove staging data and leave no partial repository available.
+
+The accepted upload response is `202 Accepted` with `status: "indexing"`, accepted/skipped file counts, extracted bytes, and safe relative-path warnings. This ticket only hands off an accepted repository to the future indexing pipeline; it does not parse source files or make the session ready.
+
 The server treats every archive as untrusted data:
 
 - Reject an invalid or corrupt ZIP, an empty archive, and an archive containing no usable files.
@@ -43,13 +47,29 @@ The server treats every archive as untrusted data:
 
 A failed validation must leave no partially accepted repository available for indexing. The implementation should clean up any temporary extraction area before returning the error.
 
+## Source-file discovery
+
+After ingestion, discovery walks only the session repository and returns a deterministic, repository-relative inventory for parsing. Supported extensions currently map to Python (`.py`), JavaScript (`.js`, `.jsx`), TypeScript (`.ts`, `.tsx`), Java, Go, Rust, C/C++, C#, Ruby, PHP, Swift, and Kotlin. Files are ordered by normalized relative path.
+
+Discovery skips ignored/generated/vendor directories, symlinks, unsupported extensions, empty files, binary or non-UTF-8 files, unreadable files, and files exceeding `CODELENS_MAX_FILE_BYTES`. It also enforces configured discovered-file and total-byte limits. Results report indexed files/bytes plus deterministic skip-reason counts; only relative paths and language labels are exposed. Discovery never imports or executes repository content and hands its inventory to the Tree-sitter parser.
+
+## Tree-sitter parsing
+
+The parser consumes the discovery inventory and returns symbol records containing `relative_path`, `symbol_name`, `symbol_type`, `language`, `source`, and 1-based inclusive `start_line`/`end_line` fields. It emits nested classes, functions, methods, and supported declaration types; files with no meaningful declarations receive a file-level fallback symbol. Empty, unreadable, unavailable-grammar, path-boundary, and syntax problems are returned as per-file diagnostics. Syntax errors do not abort other files or prevent valid symbols around the error from being returned. Diagnostics and symbols are deterministic and never expose absolute server paths.
+
+## Code chunks and metadata
+
+Chunking turns parsed symbols into bounded records for future embeddings. Each chunk contains `chunk_id`, relative source metadata, source text, 1-based inclusive chunk lines, parent symbol lines, and zero-based `fragment_index`/`fragment_count`. Symbols within the configured limit remain intact; oversized symbols are split deterministically by source lines with bounded overlap. IDs use the versioned `chunk-v1` SHA-256 scheme over relative path, language, symbol identity, parent lines, and fragment index, so identical input produces identical IDs independent of session paths. JSON serialization validates relative paths, non-empty source, and consistent line/fragment metadata; absolute paths and traversal segments are rejected. Parser diagnostics are retained alongside chunks for partial-failure reporting.
+
 ## Repository filtering
 
 Ingestion preserves source files for indexing but does not promise that every archive member becomes an embedding. The later discovery stage ignores `.git/` and common generated/dependency/cache/vendor directories (for example `node_modules/`, `.venv/`, `dist/`, `build/`, `coverage/`, and `__pycache__/`). It also skips binary, oversized, and unsupported file types. Skips are reported as warnings/counts and do not fail an otherwise valid repository.
 
 ## Session and indexing states
 
-A session is created independently through `POST /api/session`. Repository/indexing state uses these values:
+A session is created independently through `POST /api/session`. The session manager creates an unpredictable ID and an isolated temporary workspace containing `repo/`, `index/`, and `metadata/`. These directories are server-owned and are never returned to clients as absolute paths. `DELETE /api/session/{session_id}` removes the workspace; repeating deletion is safe for the same in-memory session.
+
+Repository/indexing state uses these values:
 
 ```text
 created → uploading → indexing → ready
