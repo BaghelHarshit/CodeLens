@@ -85,7 +85,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** production Gemini and offline providers are interchangeable.
 
 ### TICKET-011 — FAISS index and metadata store
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 009, 010
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 009, 010
 - Build one FAISS index per session and persist/reload only within its workspace.
 - Validate dimensions, empty indexes, top-k search, stable ordering, and metadata mapping.
 - **Done when:** fixture search returns file/symbol/line metadata and deletion removes artifacts.
