@@ -78,10 +78,11 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 
 ### TICKET-010 — Embedding provider abstraction
 - **Status:** TODO | **Priority:** P0 | **Depends on:** 009
-- Configure OpenAI key/model/batch/timeout/retry through environment variables.
+- Configure the Google Gemini API key, embedding model, batch, timeout, and retry through environment variables. The project will use the user's free Google Gemini API key for live embeddings instead of an OpenAI key. Gemini provides a compatible embedding API/model, subject to the account's current free-tier quota and model availability.
+- Define a provider interface so Gemini is replaceable by another embedding provider later through configuration and a small adapter change, without changing chunking, retrieval, or indexing workflows.
 - Batch calls, retry bounded transient failures, and provide deterministic fake embeddings.
 - Do not log source or keys.
-- **Done when:** production and offline providers are interchangeable.
+- **Done when:** production Gemini and offline providers are interchangeable.
 
 ### TICKET-011 — FAISS index and metadata store
 - **Status:** TODO | **Priority:** P0 | **Depends on:** 009, 010
@@ -103,14 +104,17 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - Prove Q&A and review use the same retriever/index.
 - **Done when:** retrieval is bounded, metadata-rich, session-scoped, and tested.
 
-### TICKET-014 — Shared OpenAI LLM client
+### TICKET-014 — Shared Gemini LLM client
 - **Status:** TODO | **Priority:** P0 | **Depends on:** 003
-- Centralize model, temperature, token, timeout, retry, and error handling.
+- Centralize the Google Gemini model, temperature, token, timeout, retry, and error handling. The project will use the user's free Google Gemini API key for live chat and code-review LLM requests.
+- Keep the provider boundary independent of Gemini so the embedding and LLM providers can be changed later with minimal adapter/configuration changes.
+- Define a provider interface and configuration boundary so the Gemini LLM can be replaced with another provider later through a small adapter/configuration change, without changing Q&A or code-review workflows.
 - Add a fake LLM; validate malformed/refusal responses; redact secrets and avoid full-context logs.
-- **Done when:** both workflows use one client and offline tests never call OpenAI.
+- **Done when:** both workflows use one Gemini client and offline tests never call the Gemini API.
 
 ### TICKET-015 — Repository Q&A RAG workflow
 - **Status:** TODO | **Priority:** P0 | **Depends on:** 013, 014
+- Use the shared, provider-agnostic LLM client and the configured free Google Gemini API key for live responses; offline tests must use the fake LLM. Keep provider selection replaceable without changing the RAG workflow.
 - Implement `POST /api/session/{session_id}/chat` with validation.
 - Retrieve relevant code, build a code-aware prompt, call the LLM, and return grounded answer plus references.
 - Represent insufficient context clearly; do not send the whole repository by default.
@@ -140,6 +144,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 
 ### TICKET-019 — Structured code-review workflow
 - **Status:** TODO | **Priority:** P0 | **Depends on:** 014, 018
+- Use the shared Gemini LLM client and the configured free Google Gemini API key for live review analysis; offline tests must use the fake LLM.
 - Prompt for structured, evidence-based findings.
 - Validate/normalize output; safely handle malformed results; never apply patches.
 - Include references and no-issue/insufficient-context outcomes.
