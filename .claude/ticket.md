@@ -113,7 +113,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** both workflows use one Gemini client and offline tests never call the Gemini API.
 
 ### TICKET-015 — Repository Q&A RAG workflow
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 013, 014
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 013, 014
 - Use the shared, provider-agnostic LLM client and the configured free Google Gemini API key for live responses; offline tests must use the fake LLM. Keep provider selection replaceable without changing the RAG workflow.
 - Implement `POST /api/session/{session_id}/chat` with validation.
 - Retrieve relevant code, build a code-aware prompt, call the LLM, and return grounded answer plus references.

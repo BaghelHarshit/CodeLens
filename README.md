@@ -115,7 +115,7 @@ The environment template is [.env.example](.env.example). Copy it to `.env` only
 
 ### Local repository input
 
-V1 uses a browser-friendly ZIP upload rather than accepting arbitrary server filesystem paths. The frontend will send a `repository` field using `multipart/form-data` to the session repository endpoint. Upload and extraction limits, safe archive rules, session states, and error codes are documented in [docs/api-contract.md](docs/api-contract.md). Ingestion and indexing are implemented by later tickets.
+V1 uses a browser-friendly ZIP upload rather than accepting arbitrary server filesystem paths. The frontend will send a `repository` field using `multipart/form-data` to the session repository endpoint. Upload and extraction limits, safe archive rules, session states, and error codes are documented in [docs/api-contract.md](docs/api-contract.md). Once indexing is ready, ask a grounded repository question with `POST /api/session/{session_id}/chat` and JSON such as `{\"question\":\"Where is authentication handled?\"}`. The response includes an answer, safe file/symbol/line references, and an `insufficient_context` flag.
 
 ## Development principles
 
