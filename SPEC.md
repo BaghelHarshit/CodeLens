@@ -278,13 +278,34 @@ Use for components such as:
 
 ### LangGraph
 
-Use where workflow/state orchestration is useful for:
+Use LangGraph explicitly for the structured code-review workflow, where
+bounded state transitions and validation branches are useful. The graph
+must remain a single, bounded workflow rather than a multi-agent system.
+Its nodes should orchestrate existing services:
 
--   Repository Q&A workflow
--   Code review workflow
+``` text
+Validate diff
+      ↓
+Retrieve shared repository context
+      ↓
+Context sufficient?
+  ├── no → insufficient-context outcome
+  └── yes
+          ↓
+      Invoke shared LLM
+          ↓
+      Validate/normalize findings
+  ├── malformed/refusal → bounded safe failure
+  ├── no findings → no-issue outcome
+  └── valid findings → grounded review outcome
+```
 
-Do NOT build a complicated multi-agent architecture merely to use
-LangGraph.
+The review graph must reuse the shared retrieval service, the session's
+single FAISS index, and the provider-neutral LLM client. It must not create
+separate vector stores, providers, persistence, agents, or execution
+capabilities merely to support the graph. LangGraph may be used for Q&A
+later if its state branching becomes useful, but Q&A does not require a
+graph in the initial implementation.
 
 ------------------------------------------------------------------------
 
@@ -513,6 +534,12 @@ The review should consider:
 -   Existing surrounding implementation
 -   Relevant tests when retrieved
 -   File/function metadata
+
+The review implementation should use the bounded LangGraph state
+workflow described in the RAG/LLM Framework section. LangGraph coordinates
+validation, shared-index retrieval, context sufficiency, LLM generation,
+and finding validation; it does not execute repository code or apply
+patches.
 
 The LLM can then produce findings such as:
 
@@ -1040,15 +1067,17 @@ When implementing CodeLens, follow these principles:
 7.  **Use the same repository index for both capabilities.**
 8.  **Use Tree-sitter for meaningful code-aware chunking.**
 9.  **Preserve file/function/class/line metadata with every chunk.**
-10. **Never send the entire repository to the LLM unless explicitly
+10. **Use LangGraph for bounded code-review state orchestration without
+    introducing multi-agent complexity.**
+11. **Never send the entire repository to the LLM unless explicitly
     justified.**
-11. **Do not execute arbitrary repository code.**
-12. **Build the local-repository workflow completely before adding
+12. **Do not execute arbitrary repository code.**
+13. **Build the local-repository workflow completely before adding
     GitHub integration.**
-13. **GitHub API repository retrieval is the final deferred phase.**
-14. **Do not over-engineer for production scale; this is a fresher-level
+14. **GitHub API repository retrieval is the final deferred phase.**
+15. **Do not over-engineer for production scale; this is a fresher-level
     placement project.**
-15. **Any architectural change should be deliberate and documented
+16. **Any architectural change should be deliberate and documented
     rather than introduced implicitly.**
 
 ------------------------------------------------------------------------
@@ -1064,7 +1093,7 @@ When implementing CodeLens, follow these principles:
   Code Parser          Tree-sitter
   Vector Store         FAISS
   RAG                  LangChain
-  Workflow             LangGraph where useful
+  Workflow             LangGraph for bounded code-review orchestration
   Storage              Temporary server filesystem
   Database             None
   API                  REST

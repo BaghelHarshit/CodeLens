@@ -130,31 +130,35 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 
 ### TICKET-017 — Define diff input and finding schema
 - **Status:** TODO | **Priority:** P0 | **Depends on:** 002, 013
-- Choose unified diff or selected changed-code input.
+- Choose unified diff or selected changed-code input as the LangGraph review workflow input.
 - Validate missing, empty, malformed, and oversized changes.
 - Define severity, file, line, issue, explanation, suggested fix, and optional category/confidence.
-- **Done when:** versionable request/response contracts are documented.
+- **Done when:** versionable request/response contracts are documented and suitable for graph-state validation.
 
 ### TICKET-018 — Retrieve review context
 - **Status:** TODO | **Priority:** P0 | **Depends on:** 013, 017
 - Parse/normalize changed files and hunks without execution.
 - Build bounded queries from changed symbols/files and relevant tests.
 - Retrieve surrounding/related code from the same FAISS index as Q&A.
+- Produce the bounded context and metadata consumed by the LangGraph review workflow.
 - **Done when:** context includes changed code and relevant existing code where available.
 
 ### TICKET-019 — Structured code-review workflow
 - **Status:** TODO | **Priority:** P0 | **Depends on:** 014, 018
+- Implement the code-review workflow with LangGraph as a single bounded state graph, not a multi-agent system.
+- Define graph states/nodes for input validation, context sufficiency, shared retrieval, Gemini LLM invocation, structured finding validation/normalization, and safe terminal outcomes.
 - Use the shared Gemini LLM client and the configured free Google Gemini API key for live review analysis; offline tests must use the fake LLM.
-- Prompt for structured, evidence-based findings.
-- Validate/normalize output; safely handle malformed results; never apply patches.
-- Include references and no-issue/insufficient-context outcomes.
-- **Done when:** findings are schema-valid and grounded.
+- Prompt for structured, evidence-based findings grounded in changed code and retrieved repository context.
+- Safely handle malformed/refusal/provider results, retry only within bounded limits, include references and no-issue/insufficient-context outcomes, and never apply patches.
+- Reuse the shared retrieval service, session-scoped FAISS index, and provider boundary; do not create a separate review index or agent architecture.
+- **Done when:** the LangGraph workflow produces schema-valid, grounded findings and tested transitions for success, no-findings, insufficient-context, malformed-output, and provider-failure paths.
 
 ### TICKET-020 — Review API and tests
 - **Status:** TODO | **Priority:** P0 | **Depends on:** 019
-- Implement `POST /api/session/{session_id}/review`.
-- Test valid, empty, malformed, missing-file, no-finding, malformed-LLM, and provider-failure cases.
-- **Done when:** API and shared-index behavior are documented and automated.
+- Implement `POST /api/session/{session_id}/review` over the LangGraph workflow.
+- Test graph transitions and API behavior for valid, empty, malformed, missing-file, no-finding, insufficient-context, malformed-LLM, refusal, and provider-failure cases.
+- Verify the API and graph use the same session FAISS index/retriever as Q&A and never apply patches.
+- **Done when:** API, LangGraph state transitions, shared-index behavior, and error contracts are documented and automated.
 
 ## Phase 4 — React UI
 
@@ -227,7 +231,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 1. 001–004: Git, scaffolding, and quality gates.
 2. 005–012: session/indexing milestone.
 3. 013–016: first useful demo — local fixture → index → Q&A.
-4. 017–020: code-review milestone.
+4. 017–020: code-review milestone, including the bounded LangGraph workflow.
 5. 021–024: usable UI.
 6. 025–029: hardening and V1 release.
 7. 030: GitHub only after V1 is complete.
