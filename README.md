@@ -18,7 +18,7 @@ The planned V1 stack is:
 - **Storage:** temporary, session-scoped server filesystem
 - **API:** REST
 
-The backend will index a local repository once per temporary session. Q&A and code review will use the same repository index and return source metadata such as file paths, symbols, and line ranges.
+The backend will index a local repository once per temporary session. Q&A and code review use the same shared, bounded retrieval service and repository index, returning source metadata such as repository-relative file paths, symbols, and line ranges. Retrieval limits context size and deduplicates chunks before a future LLM workflow consumes it.
 
 ## Ticket progress
 

@@ -99,7 +99,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 ## Phase 2 — Shared RAG and repository Q&A
 
 ### TICKET-013 — Shared retrieval service
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 011, 012
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 011, 012
 - Embed user/review queries, retrieve top-k from the session index, bound context, deduplicate results, and format safe references.
 - Prove Q&A and review use the same retriever/index.
 - **Done when:** retrieval is bounded, metadata-rich, session-scoped, and tested.
