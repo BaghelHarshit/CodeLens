@@ -8,6 +8,7 @@ import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import faiss
 import numpy as np
@@ -104,7 +105,7 @@ class SessionIndex:
         ]
         return sorted(results, key=lambda item: (-item.score, item.chunk.chunk_id))
 
-    def _validated_matrix(self, vectors: list[list[float]], expected: int) -> np.ndarray:
+    def _validated_matrix(self, vectors: list[list[float]], expected: int) -> np.ndarray[Any, Any]:
         if len(vectors) != expected or any(
             len(vector) != self.dimensions
             or any(not math.isfinite(float(value)) for value in vector)

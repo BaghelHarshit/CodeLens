@@ -2,10 +2,11 @@
 
 from typing import cast
 
-from fastapi import APIRouter, File, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Request, UploadFile
 from fastapi.responses import JSONResponse
 
 from .config import Settings
+from .indexing import IndexingRegistry
 from .repository import IngestionError, ingest_repository
 from .session import SessionManager
 from .session.models import InvalidSessionStateError, SessionNotFoundError, SessionState
@@ -21,9 +22,14 @@ def _settings(request: Request) -> Settings:
     return cast(Settings, request.app.state.settings)
 
 
+def _registry(request: Request) -> IndexingRegistry:
+    return cast(IndexingRegistry, request.app.state.indexing_registry)
+
+
 @router.post("/{session_id}/repository", status_code=202)  # noqa: B008
 async def upload_repository(
     request: Request,
+    background_tasks: BackgroundTasks,
     session_id: str,
     repository: UploadFile | None = File(default=None),  # noqa: B008
 ) -> dict[str, object]:
@@ -41,6 +47,7 @@ async def upload_repository(
             manager.transition(session_id, SessionState.FAILED)
         raise
     manager.transition(session_id, SessionState.INDEXING)
+    background_tasks.add_task(_registry(request).start, session, _settings(request))
     return {
         "session_id": session_id,
         "status": "indexing",

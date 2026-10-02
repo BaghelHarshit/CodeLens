@@ -91,7 +91,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** fixture search returns file/symbol/line metadata and deletion removes artifacts.
 
 ### TICKET-012 — Indexing orchestration and status API
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 005–011
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 005–011
 - Connect ingestion → discovery → parsing → chunking → embeddings → FAISS.
 - Add progress/status, summary counts, retries, readiness gates, and partial-failure reporting.
 - **Done when:** sessions predictably become ready or failed, with integration tests.

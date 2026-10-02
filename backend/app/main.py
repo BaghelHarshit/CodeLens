@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .api_indexing import router as indexing_router
 from .api_repository import (
     REPOSITORY_EXCEPTION_TYPES,
     repository_exception_handler,
@@ -18,6 +19,7 @@ from .api_session import (
     router as session_router,
 )
 from .config import get_settings
+from .indexing import IndexingRegistry
 from .session import SessionManager
 
 settings = get_settings()
@@ -36,6 +38,7 @@ app.add_middleware(
 )
 app.state.settings = settings
 app.state.session_manager = SessionManager(settings.temp_root)
+app.state.indexing_registry = IndexingRegistry()
 for exception_type in (*SESSION_EXCEPTION_TYPES, *REPOSITORY_EXCEPTION_TYPES):
     handler = (
         session_exception_handler
@@ -45,6 +48,7 @@ for exception_type in (*SESSION_EXCEPTION_TYPES, *REPOSITORY_EXCEPTION_TYPES):
     app.add_exception_handler(exception_type, handler)
 app.include_router(session_router)
 app.include_router(repository_router)
+app.include_router(indexing_router)
 
 
 @app.get("/health", tags=["system"])
