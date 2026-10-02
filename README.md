@@ -18,7 +18,7 @@ The planned V1 stack is:
 - **Storage:** temporary, session-scoped server filesystem
 - **API:** REST
 
-The backend will index a local repository once per temporary session. Q&A and code review use the same shared, bounded retrieval service and repository index, returning source metadata such as repository-relative file paths, symbols, and line ranges. Retrieval limits context size and deduplicates chunks before a future LLM workflow consumes it.
+The backend will index a local repository once per temporary session. Q&A and code review use the same shared, bounded retrieval service and repository index, returning source metadata such as repository-relative file paths, symbols, and line ranges. Retrieval limits context size and deduplicates chunks before the provider-neutral LLM workflow consumes it. Gemini is the configured live LLM adapter; offline tests use the fake adapter and never call Gemini.
 
 ## Ticket progress
 

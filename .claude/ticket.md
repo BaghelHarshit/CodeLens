@@ -105,7 +105,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** retrieval is bounded, metadata-rich, session-scoped, and tested.
 
 ### TICKET-014 — Shared Gemini LLM client
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 003
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 003
 - Centralize the Google Gemini model, temperature, token, timeout, retry, and error handling. The project will use the user's free Google Gemini API key for live chat and code-review LLM requests.
 - Keep the provider boundary independent of Gemini so the embedding and LLM providers can be changed later with minimal adapter/configuration changes.
 - Define a provider interface and configuration boundary so the Gemini LLM can be replaced with another provider later through a small adapter/configuration change, without changing Q&A or code-review workflows.

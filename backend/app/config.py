@@ -29,6 +29,16 @@ class Settings(BaseSettings):
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     openai_chat_model: str | None = Field(default=None, alias="OPENAI_CHAT_MODEL")
 
+    llm_provider: str = Field(default="fake", alias="CODELENS_LLM_PROVIDER")
+    gemini_chat_model: str = Field(default="gemini-2.5-flash", alias="GEMINI_CHAT_MODEL")
+    llm_temperature: float = Field(default=0.2, ge=0, le=2, alias="LLM_TEMPERATURE")
+    llm_max_output_tokens: int = Field(
+        default=2048, ge=1, le=128_000, alias="LLM_MAX_OUTPUT_TOKENS"
+    )
+    llm_timeout: float = Field(default=60.0, gt=0, le=300, alias="LLM_TIMEOUT")
+    llm_max_retries: int = Field(default=2, ge=0, le=5, alias="LLM_MAX_RETRIES")
+    llm_retry_backoff: float = Field(default=0.25, ge=0, le=10, alias="LLM_RETRY_BACKOFF")
+
     embedding_provider: str = Field(default="fake", alias="CODELENS_EMBEDDING_PROVIDER")
     gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
     gemini_embedding_model: str = Field(
@@ -46,6 +56,22 @@ class Settings(BaseSettings):
     openai_embedding_dimensions: int | None = Field(
         default=None, ge=1, alias="OPENAI_EMBEDDING_DIMENSIONS"
     )
+
+    @field_validator("llm_provider")
+    @classmethod
+    def validate_llm_provider(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"fake", "gemini"}:
+            raise ValueError("LLM provider must be fake or gemini")
+        return normalized
+
+    @field_validator("gemini_chat_model")
+    @classmethod
+    def validate_chat_model(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Gemini chat model must not be empty")
+        return normalized
 
     @field_validator("embedding_provider")
     @classmethod
