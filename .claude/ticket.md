@@ -77,7 +77,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** metadata round-trips and every chunk maps to source lines.
 
 ### TICKET-010 — Embedding provider abstraction
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 009
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 009
 - Configure the Google Gemini API key, embedding model, batch, timeout, and retry through environment variables. The project will use the user's free Google Gemini API key for live embeddings instead of an OpenAI key. Gemini provides a compatible embedding API/model, subject to the account's current free-tier quota and model availability.
 - Define a provider interface so Gemini is replaceable by another embedding provider later through configuration and a small adapter change, without changing chunking, retrieval, or indexing workflows.
 - Batch calls, retry bounded transient failures, and provide deterministic fake embeddings.

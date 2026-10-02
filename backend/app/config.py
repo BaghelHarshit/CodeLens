@@ -28,10 +28,40 @@ class Settings(BaseSettings):
 
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     openai_chat_model: str | None = Field(default=None, alias="OPENAI_CHAT_MODEL")
+
+    embedding_provider: str = Field(default="fake", alias="CODELENS_EMBEDDING_PROVIDER")
+    gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
+    gemini_embedding_model: str = Field(
+        default="gemini-embedding-001", alias="GEMINI_EMBEDDING_MODEL"
+    )
+    embedding_dimensions: int = Field(default=8, ge=1, le=3072, alias="EMBEDDING_DIMENSIONS")
+    embedding_batch_size: int = Field(default=32, ge=1, le=1000, alias="EMBEDDING_BATCH_SIZE")
+    embedding_timeout: float = Field(default=30.0, gt=0, le=300, alias="EMBEDDING_TIMEOUT")
+    embedding_max_retries: int = Field(default=2, ge=0, le=5, alias="EMBEDDING_MAX_RETRIES")
+    embedding_retry_backoff: float = Field(
+        default=0.25, ge=0, le=10, alias="EMBEDDING_RETRY_BACKOFF"
+    )
+
     openai_embedding_model: str | None = Field(default=None, alias="OPENAI_EMBEDDING_MODEL")
     openai_embedding_dimensions: int | None = Field(
         default=None, ge=1, alias="OPENAI_EMBEDDING_DIMENSIONS"
     )
+
+    @field_validator("embedding_provider")
+    @classmethod
+    def validate_embedding_provider(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"fake", "gemini"}:
+            raise ValueError("embedding provider must be fake or gemini")
+        return normalized
+
+    @field_validator("gemini_embedding_model")
+    @classmethod
+    def validate_embedding_model(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Gemini embedding model must not be empty")
+        return normalized
 
     max_repository_bytes: int = Field(
         default=100 * 1024 * 1024, ge=1, alias="CODELENS_MAX_REPOSITORY_BYTES"

@@ -11,7 +11,8 @@ The planned V1 stack is:
 - **Frontend:** React, TypeScript, and Vite
 - **Backend:** Python and FastAPI
 - **Code parsing:** Tree-sitter
-- **Embeddings and LLM:** OpenAI API
+- **Embeddings:** Google Gemini API (with a deterministic offline fake provider)
+- **LLM:** provider adapter configured separately
 - **Vector store:** temporary FAISS index
 - **RAG/workflow:** LangChain and LangGraph where useful
 - **Storage:** temporary, session-scoped server filesystem
