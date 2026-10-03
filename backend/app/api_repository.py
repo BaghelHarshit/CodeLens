@@ -9,7 +9,12 @@ from .config import Settings
 from .indexing import IndexingRegistry
 from .repository import IngestionError, ingest_repository
 from .session import SessionManager
-from .session.models import InvalidSessionStateError, SessionNotFoundError, SessionState
+from .session.models import (
+    InvalidSessionStateError,
+    SessionDeletedError,
+    SessionNotFoundError,
+    SessionState,
+)
 
 router = APIRouter(prefix="/api/session", tags=["repository"])
 
@@ -70,6 +75,10 @@ def repository_exception_handler(_: Request, exc: Exception) -> JSONResponse:
         status_code = 404
         code = "SESSION_NOT_FOUND"
         message = "Session was not found."
+    elif isinstance(exc, SessionDeletedError):
+        status_code = 410
+        code = "SESSION_DELETED"
+        message = "Session has been deleted."
     elif isinstance(exc, InvalidSessionStateError):
         status_code = 409
         code = "INVALID_SESSION_STATE"
@@ -83,4 +92,9 @@ def repository_exception_handler(_: Request, exc: Exception) -> JSONResponse:
     )
 
 
-REPOSITORY_EXCEPTION_TYPES = (IngestionError, SessionNotFoundError, InvalidSessionStateError)
+REPOSITORY_EXCEPTION_TYPES = (
+    IngestionError,
+    SessionNotFoundError,
+    SessionDeletedError,
+    InvalidSessionStateError,
+)

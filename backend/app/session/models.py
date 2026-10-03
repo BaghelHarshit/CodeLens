@@ -24,6 +24,10 @@ class SessionNotFoundError(SessionError):
     """Raised when a session ID is not registered."""
 
 
+class SessionDeletedError(SessionError):
+    """Raised when an operation targets a deleted session."""
+
+
 class InvalidSessionStateError(SessionError):
     """Raised when an operation is invalid for the current session state."""
 

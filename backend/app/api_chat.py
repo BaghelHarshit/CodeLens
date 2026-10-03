@@ -8,11 +8,11 @@ from pydantic import BaseModel, Field
 
 from .config import Settings
 from .indexing import IndexingRegistry
-from .llm import create_llm_provider
+from .llm import LLMProvider, create_llm_provider
 from .rag import QAProviderError, QAValidationError, answer_question
 from .retrieval import RetrievalNotReadyError, RetrievalValidationError
 from .session import SessionManager
-from .session.models import SessionNotFoundError
+from .session.models import SessionDeletedError, SessionNotFoundError
 
 router = APIRouter(prefix="/api/session", tags=["chat"])
 
@@ -31,7 +31,7 @@ def _registry(request: Request) -> IndexingRegistry:
     return cast(IndexingRegistry, request.app.state.indexing_registry)
 
 
-def _llm(request: Request, settings: Settings):
+def _llm(request: Request, settings: Settings) -> LLMProvider:
     provider = getattr(request.app.state, "llm_provider", None)
     if provider is None:
         provider = create_llm_provider(settings)
@@ -46,7 +46,9 @@ def _settings(request: Request) -> Settings:
 @router.post("/{session_id}/chat")
 def chat(request: Request, session_id: str, payload: ChatRequest) -> dict[str, object]:
     """Answer one question using only bounded indexed repository context."""
-    _manager(request).get(session_id)
+    session = _manager(request).get(session_id)
+    if session.state.value == "deleted":
+        raise SessionDeletedError("Session has been deleted.")
     result = answer_question(
         session_id=session_id,
         question=payload.question,
@@ -60,6 +62,8 @@ def chat_exception_handler(_: Request, exc: Exception) -> JSONResponse:
     """Convert Q&A failures into stable, safe API errors."""
     if isinstance(exc, SessionNotFoundError):
         status_code, code, message = 404, "SESSION_NOT_FOUND", "Session was not found."
+    elif isinstance(exc, SessionDeletedError):
+        status_code, code, message = 410, "SESSION_DELETED", "Session has been deleted."
     elif isinstance(exc, (RetrievalNotReadyError,)):
         status_code, code, message = (
             409,
@@ -79,6 +83,7 @@ def chat_exception_handler(_: Request, exc: Exception) -> JSONResponse:
 
 CHAT_EXCEPTION_TYPES = (
     SessionNotFoundError,
+    SessionDeletedError,
     RetrievalNotReadyError,
     QAValidationError,
     RetrievalValidationError,

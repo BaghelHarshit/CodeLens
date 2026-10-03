@@ -5,6 +5,7 @@ import pytest
 from app.chunking.models import CodeChunk
 from app.indexing import IndexingRegistry, SearchResult
 from app.llm.fake import FakeLLM
+from app.llm.protocol import LLMGenerationError
 from app.rag import QAProviderError, QAValidationError, answer_question
 
 
@@ -72,5 +73,45 @@ def test_invalid_question_and_provider_failure_are_safe() -> None:
         def search(self, query: str, top_k: int) -> list[SearchResult]:
             return [SearchResult(1.0, SimpleNamespace(chunk_id="bad"))]  # pragma: no cover
 
-    # The workflow's provider boundary is exercised by the fake directly in later API tests.
+    class ReadyIndex:
+        ready = True
+
+        def search(self, query: str, top_k: int) -> list[SearchResult]:
+            return [SearchResult(1.0, SimpleNamespace(
+                chunk_id="one",
+                relative_path="src/main.py",
+                symbol_name="run",
+                symbol_type="function",
+                language="python",
+                source="return 'ok'",
+                start_line=2,
+                end_line=2,
+            ))]
+
+    provider_failed = IndexingRegistry()
+    provider_failed._indexes["session"] = ReadyIndex()  # type: ignore[assignment]
+    with pytest.raises(QAProviderError):
+        answer_question(
+            session_id="session",
+            question="What does run do?",
+            registry=provider_failed,
+            llm=FakeLLM(error=LLMGenerationError("failed")),
+        )
+
+    with pytest.raises(QAProviderError):
+        answer_question(
+            session_id="session",
+            question="What does run do?",
+            registry=provider_failed,
+            llm=FakeLLM(refusal=True),
+        )
+
+    with pytest.raises(QAProviderError):
+        answer_question(
+            session_id="session",
+            question="What does run do?",
+            registry=provider_failed,
+            llm=FakeLLM(response=""),
+        )
+
     assert QAProviderError

@@ -88,6 +88,70 @@ created → deleted
 
 Q&A and code review are allowed only in `ready`. Repository replacement is not supported in the first implementation; a client must delete the session and create a new one. Status polling will use a later endpoint, conventionally `GET /api/session/{session_id}/status`, until indexing reaches `ready` or `failed`.
 
+## Repository Q&A
+
+Once a session is ready, clients may ask a bounded repository question:
+
+```http
+POST /api/session/{session_id}/chat
+Content-Type: application/json
+
+{"question":"Where is authentication handled?"}
+```
+
+A successful response contains an answer, safe repository-relative references, and an `insufficient_context` boolean. Questions are answered using only bounded context retrieved from the session's shared index; the entire repository is never sent by default. The question is trimmed and must contain 1–4,000 characters. Blank, oversized, not-ready, deleted, missing-session, and provider-failure requests return the documented JSON error shape.
+
+Example request:
+
+```bash
+curl -X POST http://localhost:8000/api/session/<session-id>/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Where is authentication handled?"}'
+```
+
+Grounded response:
+
+```json
+{
+  "answer": "Authentication is handled by ...",
+  "references": [
+    {
+      "chunk_id": "chunk-v1-example",
+      "relative_path": "src/auth.py",
+      "symbol_name": "authenticate",
+      "symbol_type": "function",
+      "language": "python",
+      "start_line": 10,
+      "end_line": 18,
+      "score": 0.92
+    }
+  ],
+  "insufficient_context": false
+}
+```
+
+When no indexed chunk is relevant, the API returns HTTP `200` with `insufficient_context: true`, an explanatory answer, and an empty `references` array. The answer must not be treated as evidence beyond the listed repository-relative references.
+
+Q&A errors use the common shape `{ "error": { "code": "...", "message": "..." } }`:
+
+| HTTP | Code | Meaning |
+| ---: | --- | --- |
+| 404 | `SESSION_NOT_FOUND` | The session ID does not exist. |
+| 409 | `SESSION_NOT_READY` | Indexing has not produced a ready shared index. |
+| 410 | `SESSION_DELETED` | The session was explicitly deleted. |
+| 422 | `INVALID_QUESTION` | The question is blank, malformed, or outside the 4,000-character bound. |
+| 502 | `LLM_FAILED` | The configured language-model provider failed, refused, or returned unusable output. |
+
+Insufficient-context example:
+
+```json
+{
+  "answer": "There is insufficient repository context to answer this question.",
+  "references": [],
+  "insufficient_context": true
+}
+```
+
 ## Responses
 
 A successful upload starts indexing and returns a status summary. The exact progress fields may grow, but these fields are stable for the initial contract:
