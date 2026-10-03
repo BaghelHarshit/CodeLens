@@ -187,6 +187,12 @@ curl -X POST http://localhost:8000/api/session/<session-id>/review \
   -d @review-request.json
 ```
 
+### Review context preparation
+
+Before the future review workflow invokes an LLM, Ticket 018 normalizes the parsed `review-v1` diff into bounded changed-file evidence and retrieves related repository chunks through the same session FAISS index and retrieval service used by Q&A. Each changed file retains hunk ranges, changed line kinds, and new-file line numbers; retrieval references retain repository-relative paths, symbols, languages, and line ranges.
+
+Context preparation builds bounded queries from changed paths, hunk ranges, additions, and a related-tests hint. Queries, references, source sections, and total context are deduplicated and size-limited. Changed diff evidence is retained even when retrieval returns no matching chunks, which produces an `insufficient_context` signal for the later workflow. This stage never reads or executes repository code, invokes an LLM, applies patches, or creates a second index. It only consumes the normalized diff and the existing session-scoped index.
+
 ## Responses
 
 A successful upload starts indexing and returns a status summary. The exact progress fields may grow, but these fields are stable for the initial contract:

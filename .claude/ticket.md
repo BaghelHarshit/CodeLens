@@ -136,7 +136,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** versionable request/response contracts are documented and suitable for graph-state validation.
 
 ### TICKET-018 — Retrieve review context
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 013, 017
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 013, 017
 - Parse/normalize changed files and hunks without execution.
 - Build bounded queries from changed symbols/files and relevant tests.
 - Retrieve surrounding/related code from the same FAISS index as Q&A.
