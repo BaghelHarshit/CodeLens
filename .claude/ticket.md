@@ -121,7 +121,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** fixture questions return grounded answers/references and not-ready sessions are rejected.
 
 ### TICKET-016 — Q&A contract and end-to-end tests
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 015
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 015
 - Stabilize API models and document curl examples.
 - Test fake providers, empty retrieval, long questions, provider failures, and deleted sessions.
 - **Done when:** happy and failure paths pass automatically.
