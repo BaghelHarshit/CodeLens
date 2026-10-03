@@ -144,7 +144,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** context includes changed code and relevant existing code where available.
 
 ### TICKET-019 — Structured code-review workflow
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 014, 018
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 014, 018
 - Implement the code-review workflow with LangGraph as a single bounded state graph, not a multi-agent system.
 - Define graph states/nodes for input validation, context sufficiency, shared retrieval, Gemini LLM invocation, structured finding validation/normalization, and safe terminal outcomes.
 - Use the shared Gemini LLM client and the configured free Google Gemini API key for live review analysis; offline tests must use the fake LLM.

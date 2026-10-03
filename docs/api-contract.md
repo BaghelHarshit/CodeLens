@@ -193,6 +193,12 @@ Before the future review workflow invokes an LLM, Ticket 018 normalizes the pars
 
 Context preparation builds bounded queries from changed paths, hunk ranges, additions, and a related-tests hint. Queries, references, source sections, and total context are deduplicated and size-limited. Changed diff evidence is retained even when retrieval returns no matching chunks, which produces an `insufficient_context` signal for the later workflow. This stage never reads or executes repository code, invokes an LLM, applies patches, or creates a second index. It only consumes the normalized diff and the existing session-scoped index.
 
+### Structured review workflow
+
+Ticket 019 adds one bounded LangGraph workflow after diff normalization and shared-context retrieval. Its states validate the unified diff, retrieve context from the session's existing FAISS index, return `insufficient_context` without invoking the LLM when no indexed references are available, invoke the provider with bounded changed/retrieved evidence, and validate/normalize structured output. The graph is not a multi-agent system and never executes repository code or applies patches.
+
+The provider response must be JSON containing a `findings` array (an empty array produces `no_findings`). Findings must use the Ticket 017 schema and be grounded in a changed repository-relative file and a positive new-file line represented by an addition in the diff. Invalid JSON, invalid findings, ungrounded findings, refusals, and provider failures produce a safe workflow error rather than exposing raw provider output, prompts, source dumps, or secrets. Prompt and response size limits are enforced before and after generation.
+
 ## Responses
 
 A successful upload starts indexing and returns a status summary. The exact progress fields may grow, but these fields are stable for the initial contract:
