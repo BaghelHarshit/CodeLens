@@ -129,7 +129,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 ## Phase 3 — RAG code review
 
 ### TICKET-017 — Define diff input and finding schema
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 002, 013
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 002, 013
 - Choose unified diff or selected changed-code input as the LangGraph review workflow input.
 - Validate missing, empty, malformed, and oversized changes.
 - Define severity, file, line, issue, explanation, suggested fix, and optional category/confidence.

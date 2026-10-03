@@ -152,6 +152,41 @@ Insufficient-context example:
 }
 ```
 
+## Code review contract
+
+Ticket 017 selects a bounded unified diff as the review input. The future review endpoint (Ticket 020) accepts JSON with one required field:
+
+```json
+{"diff":"diff --git a/src/app.py b/src/app.py\\n--- a/src/app.py\\n+++ b/src/app.py\\n@@ -1 +1 @@\\n-old()\\n+new()\\n"}
+```
+
+Diffs are limited to 200,000 characters, 100 files, 500 hunks, and 10,000 parsed lines. Paths are normalized to repository-relative POSIX paths; absolute paths, traversal, NUL bytes, malformed headers/hunks, inconsistent hunk counts, blank input, and unsupported unstructured input are rejected. Parsing never reads or writes the repository, executes code, applies patches, or contacts a provider.
+
+The normalized review input is versioned as `review-v1`. Each finding uses this shape:
+
+```json
+{
+  "severity": "high",
+  "file": "src/app.py",
+  "line": 12,
+  "issue": "The changed branch skips validation.",
+  "explanation": "...",
+  "suggested_fix": "Validate the value before returning it.",
+  "category": "correctness",
+  "confidence": 0.9
+}
+```
+
+`severity` is one of `critical`, `high`, `medium`, `low`, or `info`; `file` is repository-relative; `line` is a positive 1-based line in the new file; and `issue`/`explanation` are required. `suggested_fix`, `category`, and `confidence` are optional, with confidence bounded from 0 to 1. Terminal review outcomes are `findings`, `no_findings`, and `insufficient_context`. Validation errors use `MISSING_DIFF`, `EMPTY_DIFF`, `DIFF_TOO_LARGE`, `MALFORMED_DIFF`, `UNSAFE_DIFF_PATH`, or `DIFF_LIMIT_EXCEEDED` and the common error shape.
+
+Example future request:
+
+```bash
+curl -X POST http://localhost:8000/api/session/<session-id>/review \
+  -H "Content-Type: application/json" \
+  -d @review-request.json
+```
+
 ## Responses
 
 A successful upload starts indexing and returns a status summary. The exact progress fields may grow, but these fields are stable for the initial contract:
