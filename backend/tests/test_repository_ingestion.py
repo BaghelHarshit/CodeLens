@@ -63,3 +63,16 @@ async def test_corrupt_upload_is_rejected(tmp_path: Path) -> None:
         await ingest_repository(upload, session, Settings(temp_root=str(tmp_path)))
 
     assert error.value.code == "INVALID_ARCHIVE"
+
+
+@pytest.mark.anyio
+async def test_corrupt_rar_upload_is_rejected(tmp_path: Path) -> None:
+    manager = SessionManager(tmp_path)
+    session = manager.create()
+    upload = UploadFile(BytesIO(b"not a rar"), filename="repo.rar", headers=Headers())
+
+    with pytest.raises(IngestionError) as error:
+        await ingest_repository(upload, session, Settings(temp_root=str(tmp_path)))
+
+    assert error.value.code == "INVALID_ARCHIVE"
+    assert list(session.repository_dir.iterdir()) == []

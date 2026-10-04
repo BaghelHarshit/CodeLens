@@ -14,12 +14,21 @@ export class ApiError extends Error {
   }
 }
 
+const REQUEST_TIMEOUT_MS = 10_000
+
 async function request<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
   let response: Response
   try {
-    response = await fetch(input, init)
-  } catch {
+    response = await fetch(input, { ...init, signal: init?.signal ?? controller.signal })
+  } catch (cause) {
+    if (cause instanceof DOMException && cause.name === 'AbortError') {
+      throw new ApiError(0, 'NETWORK_TIMEOUT', 'The CodeLens service did not respond in time.')
+    }
     throw new ApiError(0, 'NETWORK_ERROR', 'The CodeLens service could not be reached.')
+  } finally {
+    window.clearTimeout(timeout)
   }
   if (!response.ok) {
     let payload: ApiErrorPayload = {}
@@ -50,8 +59,35 @@ export function uploadRepository(sessionId: string, file: File): Promise<UploadR
   })
 }
 
-export function getIndexingStatus(sessionId: string): Promise<IndexingStatus> {
-  return request<IndexingStatus>(`${API_BASE_URL}/api/session/${sessionId}/status`)
+export async function getIndexingStatus(sessionId: string): Promise<IndexingStatus> {
+  const response = await request<{
+    session_id: string
+    state?: IndexingStatus['status']
+    status?: IndexingStatus['status']
+    progress?: number
+    files_seen?: number
+    files_discovered?: number
+    files_indexed?: number
+    chunks_created?: number
+    chunks_indexed?: number
+    skipped_files?: number
+    files_skipped?: number
+    warnings?: string[]
+    error_message?: string | null
+    error?: string
+  }>(`${API_BASE_URL}/api/session/${sessionId}/status`)
+
+  return {
+    session_id: response.session_id,
+    status: response.status ?? response.state ?? 'failed',
+    progress: response.progress,
+    files_seen: response.files_seen,
+    files_indexed: response.files_indexed ?? response.files_discovered,
+    files_skipped: response.files_skipped ?? response.skipped_files,
+    chunks_created: response.chunks_created ?? response.chunks_indexed,
+    warnings: response.warnings,
+    error: response.error ?? response.error_message ?? undefined,
+  }
 }
 
 export async function deleteSession(sessionId: string): Promise<SessionResponse> {

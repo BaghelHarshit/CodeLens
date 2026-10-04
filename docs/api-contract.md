@@ -4,16 +4,16 @@ This document defines the local-repository input contract for TICKET-002. It is 
 
 ## Repository input
 
-V1 accepts a repository as a ZIP archive uploaded from the user's local machine. The browser must not send an arbitrary server filesystem path. A client submits the archive as `multipart/form-data`:
+V1 accepts a repository as a ZIP or RAR archive uploaded from the user's local machine. The browser must not send an arbitrary server filesystem path. A client submits the archive as `multipart/form-data`:
 
 ```http
 POST /api/session/{session_id}/repository
 Content-Type: multipart/form-data
 
-repository=<repository.zip>
+repository=<repository.zip|repository.rar>
 ```
 
-The upload field is named `repository`. The filename is informational only and must not determine the destination path. Accepted files have a `.zip` extension and the `application/zip` or `application/octet-stream` content type. The server validates the archive contents rather than trusting the content type.
+The upload field is named `repository`. The filename is informational only and must not determine the destination path. Accepted files have `.zip` or `.rar` extensions and common ZIP/RAR content types; the server validates the archive contents rather than trusting the filename or content type. RAR extraction requires the Python `rarfile` package and an installed `unrar`/`unrar-free` executable on the backend host.
 
 ### V1 limits
 
@@ -37,7 +37,8 @@ The accepted upload response is `202 Accepted` with `status: "indexing"`, accept
 
 The server treats every archive as untrusted data:
 
-- Reject an invalid or corrupt ZIP, an empty archive, and an archive containing no usable files.
+- Reject an invalid or corrupt ZIP/RAR, an empty archive, and an archive containing no usable files.
+- Reject password-protected RAR archives and report a safe error when the backend `unrar` tool is unavailable.
 - Normalize member names to relative POSIX paths before writing them.
 - Reject absolute paths, `..` traversal, NUL bytes, path collisions, and paths that resolve outside the session's repository directory.
 - Reject symbolic links and unsupported special entries; only regular files and directories are accepted.
@@ -256,9 +257,10 @@ Initial error codes include:
 | `SESSION_DELETED` | The session has already been deleted. |
 | `INVALID_SESSION_STATE` | The requested operation is not valid for the current state. |
 | `MISSING_REPOSITORY` | The multipart request has no `repository` field. |
-| `UNSUPPORTED_ARCHIVE` | The upload is not a supported ZIP input. |
+| `UNSUPPORTED_ARCHIVE` | The upload is not a supported ZIP or RAR input. |
 | `UPLOAD_TOO_LARGE` | The compressed upload exceeds its limit. |
-| `INVALID_ARCHIVE` | The archive is corrupt, empty, or unsafe. |
+| `INVALID_ARCHIVE` | The archive is corrupt, empty, encrypted, or unsafe. |
+| `RAR_TOOL_UNAVAILABLE` | RAR extraction requires an unavailable backend `unrar` tool. |
 | `EXTRACTION_LIMIT_EXCEEDED` | Extracted bytes, files, path length, or nesting exceed a limit. |
 | `EMPTY_REPOSITORY` | No usable repository files remain after validation/filtering. |
 | `INDEXING_FAILED` | A fatal indexing/provider failure occurred. |

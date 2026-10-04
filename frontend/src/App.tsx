@@ -72,9 +72,10 @@ function App() {
       setSelectedFile(null)
       return
     }
-    if (!file.name.toLowerCase().endsWith('.zip')) {
+    const filename = file.name.toLowerCase()
+    if (!filename.endsWith('.zip') && !filename.endsWith('.rar')) {
       setSelectedFile(null)
-      setError('Choose a ZIP archive to upload.')
+      setError('Choose a ZIP or RAR archive to upload.')
       return
     }
     setSelectedFile(file)
@@ -176,11 +177,11 @@ function App() {
           <>
             <p className="session-id">Session ready for repository upload.</p>
             <label className="file-picker" htmlFor="repository-file">
-              <span>Repository ZIP archive</span>
+              <span>Repository ZIP or RAR archive</span>
               <input
                 id="repository-file"
                 type="file"
-                accept=".zip,application/zip"
+                accept=".zip,.rar,application/zip,application/vnd.rar,application/x-rar-compressed"
                 onChange={(event) => handleFileChange(event.target.files?.[0])}
                 disabled={busy || status !== 'created'}
               />

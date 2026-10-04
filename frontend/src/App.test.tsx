@@ -27,7 +27,7 @@ describe('App', () => {
     expect(await screen.findByText('Session ready for repository upload.')).toBeInTheDocument()
 
     const file = new File(['zip'], 'repository.zip', { type: 'application/zip' })
-    fireEvent.change(screen.getByLabelText('Repository ZIP archive'), { target: { files: [file] } })
+    fireEvent.change(screen.getByLabelText('Repository ZIP or RAR archive'), { target: { files: [file] } })
     fireEvent.click(screen.getByRole('button', { name: 'Upload repository' }))
 
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Ready'), { timeout: 3000 })
@@ -35,17 +35,22 @@ describe('App', () => {
     expect(screen.getByText(/Q&A and code review controls/)).toBeInTheDocument()
   })
 
-  it('rejects non-ZIP files and keeps review features gated', async () => {
+  it('accepts RAR files and rejects unsupported files', async () => {
     mockFetch(session)
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Create session' }))
     await screen.findByText('Session ready for repository upload.')
 
     const file = new File(['text'], 'notes.txt', { type: 'text/plain' })
-    fireEvent.change(screen.getByLabelText('Repository ZIP archive'), { target: { files: [file] } })
+    fireEvent.change(screen.getByLabelText('Repository ZIP or RAR archive'), { target: { files: [file] } })
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Choose a ZIP archive')
+    expect(screen.getByRole('alert')).toHaveTextContent('Choose a ZIP or RAR archive')
     expect(screen.getByRole('button', { name: 'Upload repository' })).toBeDisabled()
+
+    const rar = new File(['rar'], 'repository.rar', { type: 'application/vnd.rar' })
+    fireEvent.change(screen.getByLabelText('Repository ZIP or RAR archive'), { target: { files: [rar] } })
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Upload repository' })).not.toBeDisabled()
   })
 
   it('ends the session and returns to the create state', async () => {
@@ -69,7 +74,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create session' }))
     await screen.findByText('Session ready for repository upload.')
     const file = new File(['zip'], 'repository.zip', { type: 'application/zip' })
-    fireEvent.change(screen.getByLabelText('Repository ZIP archive'), { target: { files: [file] } })
+    fireEvent.change(screen.getByLabelText('Repository ZIP or RAR archive'), { target: { files: [file] } })
     fireEvent.click(screen.getByRole('button', { name: 'Upload repository' }))
     expect(await screen.findByRole('button', { name: 'Retry with a new session' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Retry with a new session' }))

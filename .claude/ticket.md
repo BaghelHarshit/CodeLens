@@ -168,6 +168,17 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - Never display raw server paths.
 - **Done when:** a user can reach ready or recover from failure without developer tools.
 
+### CL-001 — RAR repository input support
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 002, 006, 021
+- Extend the local repository upload contract and UI to accept `.rar` archives alongside `.zip` files.
+- Detect archive format from validated content rather than trusting the filename or browser MIME type.
+- Add a safe RAR extraction path using a maintained library or system-independent implementation; preserve session isolation, staging-before-replace behavior, and never execute repository content.
+- Apply the existing compressed-size, extracted-size, file-count, path-length, traversal, collision, symlink/special-entry, and cleanup protections to RAR archives.
+- Reject corrupt, empty, unsupported, encrypted/password-protected, and limit-exceeding RAR archives with stable safe error codes/messages and no partial repository left behind.
+- Update frontend file selection/validation, API contract, README setup/demo guidance, and supported archive documentation.
+- Add deterministic automated coverage with a safe RAR fixture for valid upload, nested paths, unsupported content, malformed archives, unsafe paths/entries, limits, cleanup, and frontend acceptance; retain all ZIP coverage.
+- **Done when:** a valid `.rar` upload can be indexed through the same pipeline as ZIP, invalid/unsafe RAR input fails safely, and the contract, UI, tests, and documentation agree on both archive formats.
+
 ### TICKET-022 — Q&A UI
 - **Status:** TODO | **Priority:** P0 | **Depends on:** 016, 021
 - Add question input, loading/error states, answer display, and file/symbol/line references.
