@@ -60,3 +60,6 @@ temp/
 .tox/
 .nox/
 .mutmut-cache/
+
+# Claude Code temporary worktrees
+.claude/worktrees/
