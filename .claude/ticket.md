@@ -179,6 +179,17 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - Add deterministic automated coverage with a safe RAR fixture for valid upload, nested paths, unsupported content, malformed archives, unsafe paths/entries, limits, cleanup, and frontend acceptance; retain all ZIP coverage.
 - **Done when:** a valid `.rar` upload can be indexed through the same pipeline as ZIP, invalid/unsafe RAR input fails safely, and the contract, UI, tests, and documentation agree on both archive formats.
 
+### CL-002 — Git last-commit review source
+- **Status:** TODO | **Priority:** P0 | **Depends on:** 020, 023
+- Add an option in the code-review UI to review changes from the repository's latest Git commit without requiring the user to paste a unified diff.
+- Keep the existing manual unified-diff input and review flow available as an alternative.
+- Extract the latest commit diff from a Git-aware local repository using a safe, read-only Git operation, normalize it through the existing unified-diff parser, and reuse the current review workflow, shared retrieval service, and session index.
+- Define behavior for repositories without Git metadata, repositories with no parent commit, empty latest-commit diffs, invalid or unavailable repository state, and command failures using stable safe API errors.
+- Do not add GitHub ingestion, automatic patch application, code execution, persistent Git history, or a separate review architecture.
+- Add backend and frontend tests covering last-commit selection, manual diff fallback, missing Git metadata, initial repositories, empty diffs, malformed output, and safe error handling.
+- Update the API contract and README/demo guidance to document both review sources and the repository requirements for last-commit review.
+- **Done when:** users can select last-commit review or manual diff review, both produce the same validated review report, and unsupported Git states fail clearly without exposing server paths or executing repository content.
+
 ### TICKET-022 — Q&A UI
 - **Status:** TODO | **Priority:** P0 | **Depends on:** 016, 021
 - Add question input, loading/error states, answer display, and file/symbol/line references.
