@@ -163,7 +163,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 ## Phase 4 — React UI
 
 ### TICKET-021 — Session and repository UI
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 012, 016
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 012, 016
 - Add session creation, repository input, upload, polling, progress, warnings, errors, retry, and end-session controls.
 - Never display raw server paths.
 - **Done when:** a user can reach ready or recover from failure without developer tools.

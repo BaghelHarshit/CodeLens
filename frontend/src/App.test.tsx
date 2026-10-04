@@ -1,14 +1,78 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
 
+const session = { session_id: 'session-1', status: 'created' }
+const readyStatus = { session_id: 'session-1', status: 'ready', files_indexed: 2, chunks_created: 4 }
+
+function mockFetch(...responses: object[]) {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+    const body = responses.shift() ?? {}
+    return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } })
+  })
+}
+
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
+
 describe('App', () => {
-  it('renders the session shell', () => {
+  it('creates a session and uploads a ZIP until ready', async () => {
+    mockFetch(session, { session_id: 'session-1', status: 'indexing' }, readyStatus)
     render(<App />)
 
-    expect(screen.getByRole('heading', { name: 'CodeLens' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Start a temporary session' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Create session' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }))
+    expect(await screen.findByText('Session ready for repository upload.')).toBeInTheDocument()
+
+    const file = new File(['zip'], 'repository.zip', { type: 'application/zip' })
+    fireEvent.change(screen.getByLabelText('Repository ZIP archive'), { target: { files: [file] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Upload repository' }))
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Ready'), { timeout: 3000 })
+    expect(screen.getByText(/Repository ready/)).toBeInTheDocument()
+    expect(screen.getByText(/Q&A and code review controls/)).toBeInTheDocument()
+  })
+
+  it('rejects non-ZIP files and keeps review features gated', async () => {
+    mockFetch(session)
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }))
+    await screen.findByText('Session ready for repository upload.')
+
+    const file = new File(['text'], 'notes.txt', { type: 'text/plain' })
+    fireEvent.change(screen.getByLabelText('Repository ZIP archive'), { target: { files: [file] } })
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Choose a ZIP archive')
+    expect(screen.getByRole('button', { name: 'Upload repository' })).toBeDisabled()
+  })
+
+  it('ends the session and returns to the create state', async () => {
+    mockFetch(session, { session_id: 'session-1', status: 'deleted' })
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }))
+    await screen.findByText('Session ready for repository upload.')
+    fireEvent.click(screen.getByRole('button', { name: 'End session' }))
+    expect(await screen.findByRole('button', { name: 'Create session' })).toBeInTheDocument()
+  })
+
+  it('retries failed indexing with a fresh session', async () => {
+    mockFetch(
+      session,
+      { session_id: 'session-1', status: 'indexing' },
+      { session_id: 'session-1', status: 'failed', error: 'Indexing failed' },
+      { session_id: 'session-1', status: 'deleted' },
+      { session_id: 'session-2', status: 'created' },
+    )
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }))
+    await screen.findByText('Session ready for repository upload.')
+    const file = new File(['zip'], 'repository.zip', { type: 'application/zip' })
+    fireEvent.change(screen.getByLabelText('Repository ZIP archive'), { target: { files: [file] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Upload repository' }))
+    expect(await screen.findByRole('button', { name: 'Retry with a new session' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Retry with a new session' }))
+    expect(await screen.findByText('Session ready for repository upload.')).toBeInTheDocument()
   })
 })
