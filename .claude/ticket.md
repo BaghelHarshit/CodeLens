@@ -191,7 +191,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** users can select last-commit review or manual diff review, both produce the same validated review report, and unsupported Git states fail clearly without exposing server paths or executing repository content.
 
 ### TICKET-022 — Q&A UI
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 016, 021
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 016, 021
 - Add question input, loading/error states, answer display, and file/symbol/line references.
 - Disable or explain Q&A before readiness.
 - **Done when:** multiple questions and supporting references work in one session.
