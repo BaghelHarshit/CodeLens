@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import './App.css'
-import { ApiError, askQuestion, createSession, deleteSession, getIndexingStatus, uploadRepository } from './services/api'
-import type { ChatResponse, IndexingStatus, SessionStatus, UploadResponse } from './types'
+import { ApiError, askQuestion, createSession, deleteSession, getIndexingStatus, submitReview, uploadRepository } from './services/api'
+import type { ChatResponse, IndexingStatus, ReviewFinding, ReviewResponse, ReviewSeverity, SessionStatus, UploadResponse } from './types'
 
 const POLL_INTERVAL_MS = 1000
+const MAX_REVIEW_DIFF_CHARS = 200_000
+const REVIEW_SEVERITIES: ReviewSeverity[] = ['critical', 'high', 'medium', 'low', 'info']
 
 function statusLabel(status: SessionStatus): string {
   return status === 'ready' ? 'Ready' : status.charAt(0).toUpperCase() + status.slice(1)
@@ -20,6 +22,10 @@ function App() {
   const [answers, setAnswers] = useState<Array<{ question: string; response: ChatResponse }>>([])
   const [chatError, setChatError] = useState<string | null>(null)
   const [asking, setAsking] = useState(false)
+  const [reviewDiff, setReviewDiff] = useState('')
+  const [reviewResult, setReviewResult] = useState<ReviewResponse | null>(null)
+  const [reviewError, setReviewError] = useState<string | null>(null)
+  const [reviewing, setReviewing] = useState(false)
   const [busy, setBusy] = useState(false)
   const pollingRef = useRef<number | null>(null)
   const pollStatusRef = useRef<(id: string) => Promise<void>>(() => Promise.resolve())
@@ -60,10 +66,46 @@ function App() {
     setChatError(null)
   }
 
+  function clearReview() {
+    setReviewDiff('')
+    setReviewResult(null)
+    setReviewError(null)
+  }
+
+  async function handleReview() {
+    const trimmed = reviewDiff.trim()
+    if (!sessionId || status !== 'ready' || reviewing) return
+    if (!trimmed) {
+      setReviewError('Paste a unified diff to review.')
+      setReviewResult(null)
+      return
+    }
+    if (trimmed.length > MAX_REVIEW_DIFF_CHARS) {
+      setReviewError(`The diff must be ${MAX_REVIEW_DIFF_CHARS.toLocaleString()} characters or fewer.`)
+      setReviewResult(null)
+      return
+    }
+    setReviewing(true)
+    setReviewError(null)
+    setReviewResult(null)
+    try {
+      setReviewResult(await submitReview(sessionId, trimmed))
+    } catch (cause) {
+      setReviewError(cause instanceof ApiError ? cause.message : 'The code review could not be completed.')
+    } finally {
+      setReviewing(false)
+    }
+  }
+
+  function findingsBySeverity(findings: ReviewFinding[], severity: ReviewSeverity) {
+    return findings.filter((finding) => finding.severity === severity)
+  }
+
   async function handleCreate() {
     setBusy(true)
     setError(null)
     clearChat()
+    clearReview()
     try {
       const session = await createSession()
       setSessionId(session.session_id)
@@ -257,7 +299,9 @@ function App() {
           <p className="muted feature-gate">Q&amp;A is unavailable until the repository finishes indexing.</p>
         )}
         {hasSession && status === 'ready' && (
+          <div>
           <section className="qa-panel" aria-labelledby="qa-heading">
+
             <div>
               <h2 id="qa-heading">Ask about your repository</h2>
               <p className="muted">Answers are grounded in the indexed repository and include supporting references.</p>
@@ -310,6 +354,62 @@ function App() {
               ))}
             </div>
           </section>
+          <section className="review-panel" aria-labelledby="review-heading">
+            <div>
+              <h2 id="review-heading">Review code changes</h2>
+              <p className="muted">Paste a unified diff to find issues using your repository context.</p>
+            </div>
+            <p className="review-notice"><strong>AI suggestions:</strong> findings are advisory. CodeLens never modifies your code automatically.</p>
+            <form className="review-form" onSubmit={(event) => { event.preventDefault(); void handleReview() }}>
+              <label htmlFor="review-diff">Unified diff</label>
+              <textarea
+                id="review-diff"
+                value={reviewDiff}
+                onChange={(event) => { setReviewDiff(event.target.value); setReviewError(null) }}
+                placeholder={'diff --git a/src/app.py b/src/app.py\n+++ b/src/app.py\n@@ -1 +1 @@'}
+                rows={8}
+                maxLength={MAX_REVIEW_DIFF_CHARS + 1}
+                disabled={reviewing}
+              />
+              <div className="question-actions">
+                <span className="muted">{reviewDiff.length.toLocaleString()}/{MAX_REVIEW_DIFF_CHARS.toLocaleString()}</span>
+                <button type="submit" disabled={reviewing || !reviewDiff.trim()}>{reviewing ? 'Reviewing…' : 'Review changes'}</button>
+              </div>
+            </form>
+            {reviewing && <p className="muted" role="status">Analyzing changed code and repository context…</p>}
+            {reviewError && <p className="error-message" role="alert">{reviewError}</p>}
+            {reviewResult?.outcome === 'no_findings' && <p className="success-message">No actionable findings were identified in this diff.</p>}
+            {reviewResult?.outcome === 'insufficient_context' && <p className="muted review-empty">There was not enough indexed repository context to ground this review.</p>}
+            {reviewResult?.outcome === 'findings' && (
+              <div className="finding-list">
+                {REVIEW_SEVERITIES.map((severity) => {
+                  const findings = findingsBySeverity(reviewResult.findings, severity)
+                  if (findings.length === 0) return null
+                  return (
+                    <section className="severity-group" key={severity} aria-labelledby={`severity-${severity}`}>
+                      <h3 id={`severity-${severity}`}><span className={`severity-badge severity-${severity}`}>{severity}</span> {findings.length} finding{findings.length === 1 ? '' : 's'}</h3>
+                      {findings.map((finding, index) => (
+                        <article className="finding-card" key={`${finding.file}-${finding.line}-${index}`}>
+                          <h4>{finding.issue}</h4>
+                          <p className="finding-location"><strong>{finding.file}</strong> · line {finding.line}</p>
+                          <p>{finding.explanation}</p>
+                          {finding.suggested_fix && <p><strong>Suggested fix:</strong> {finding.suggested_fix}</p>}
+                          {(finding.category || finding.confidence !== null && finding.confidence !== undefined) && (
+                            <p className="muted finding-meta">
+                              {finding.category && <>Category: {finding.category}</>}
+                              {finding.category && finding.confidence !== null && finding.confidence !== undefined && ' · '}
+                              {finding.confidence !== null && finding.confidence !== undefined && `Confidence: ${Math.round(finding.confidence * 100)}%`}
+                            </p>
+                          )}
+                        </article>
+                      ))}
+                    </section>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+          </div>
         )}
       </section>
     </main>

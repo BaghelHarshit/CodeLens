@@ -44,7 +44,25 @@ progress { accent-color: #3659d6; display: block; margin: 0.75rem 0; width: 100%
 .error-message { background: #fff0ef; border: 1px solid #f4b8b2; border-radius: 0.6rem; color: #a32116; margin: 1.25rem 0 0; padding: 0.8rem; }
 .success-message { background: #e5f7ed; border-radius: 0.6rem; color: #176b45; margin: 1.25rem 0 0; padding: 0.8rem; }
 .feature-gate { border-top: 1px solid #edf0f5; margin: 1.5rem 0 0; padding-top: 1rem; }
-.qa-panel { border-top: 1px solid #edf0f5; margin-top: 1.5rem; padding-top: 1.5rem; }
+.qa-panel, .review-panel { border-top: 1px solid #edf0f5; margin-top: 1.5rem; padding-top: 1.5rem; }
+.review-panel h2 { margin-bottom: 0.5rem; }
+.review-notice { background: #f3f0ff; border: 1px solid #d9d0ff; border-radius: 0.6rem; color: #4b3a8c; line-height: 1.5; margin: 1rem 0; padding: 0.8rem; }
+.review-form label { display: block; font-weight: 700; margin-bottom: 0.5rem; }
+.review-form textarea { border: 1px solid #aebbd3; border-radius: 0.6rem; display: block; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; min-height: 10rem; padding: 0.75rem; resize: vertical; width: 100%; }
+.review-empty { background: #f7f9fc; border-radius: 0.6rem; margin: 1rem 0 0; padding: 1rem; }
+.finding-list { display: grid; gap: 1rem; margin-top: 1.25rem; }
+.severity-group { display: grid; gap: 0.75rem; }
+.severity-group h3 { align-items: center; display: flex; font-size: 0.95rem; gap: 0.5rem; margin: 0; text-transform: capitalize; }
+.severity-badge { border-radius: 999px; font-size: 0.72rem; padding: 0.25rem 0.55rem; text-transform: uppercase; }
+.severity-critical, .severity-high { background: #fff0ef; color: #b42318; }
+.severity-medium { background: #fff6df; color: #8a5b00; }
+.severity-low { background: #e9f5ff; color: #17618c; }
+.severity-info { background: #eef1f6; color: #526078; }
+.finding-card { background: #fffaf9; border: 1px solid #f0d7d3; border-radius: 0.7rem; padding: 1rem; }
+.finding-card h4 { font-size: 1rem; margin: 0 0 0.4rem; }
+.finding-card p { line-height: 1.55; margin-bottom: 0.7rem; }
+.finding-location { color: #526078; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.9rem; }
+.finding-meta { font-size: 0.85rem; margin-bottom: 0 !important; }
 .qa-panel h2 { margin-bottom: 0.5rem; }
 .question-form { margin-top: 1.25rem; }
 .question-form label { display: block; font-weight: 700; margin-bottom: 0.5rem; }

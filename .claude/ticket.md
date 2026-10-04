@@ -186,7 +186,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** multiple questions and supporting references work in one session.
 
 ### TICKET-023 — Code-review UI
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 020, 021
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 020, 021
 - Add diff input/validation and findings grouped by severity with file/line, explanation, suggested fix, and context.
 - Label AI suggestions and state that code is not automatically modified.
 - **Done when:** findings, no-findings, loading, and failure states are understandable.

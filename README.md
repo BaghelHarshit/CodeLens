@@ -121,6 +121,10 @@ V1 uses browser-friendly ZIP or RAR uploads rather than accepting arbitrary serv
 
 After repository indexing reaches `Ready`, the session page enables the **Ask about your repository** form. Each question is sent to the session-scoped `/chat` endpoint and the answer is grounded in retrieved repository context. Responses show supporting relative file paths, symbols, and line ranges when available; an insufficient-context response is presented explicitly. Questions and answers remain in the active browser session and are cleared when the session ends or is retried.
 
+### Browser code review
+
+When indexing reaches `Ready`, the **Review code changes** panel accepts a unified diff up to 200,000 characters and sends it to `POST /api/session/{session_id}/review`. Findings are grouped by critical, high, medium, low, or informational severity and include repository-relative file, new-file line, issue, explanation, and optional suggested fix, category, and confidence. The UI distinguishes no findings and insufficient context, reports provider errors safely, and states that suggestions are advisory: CodeLens never applies patches or modifies the repository automatically.
+
 ## Development principles
 
 1. Prefer simple, explicit designs over unnecessary infrastructure.

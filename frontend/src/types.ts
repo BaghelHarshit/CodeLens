@@ -42,6 +42,26 @@ export interface ChatResponse {
   insufficient_context: boolean
 }
 
+export type ReviewSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info'
+
+export interface ReviewFinding {
+  severity: ReviewSeverity
+  file: string
+  line: number
+  issue: string
+  explanation: string
+  suggested_fix?: string | null
+  category?: string | null
+  confidence?: number | null
+}
+
+export type ReviewOutcome = 'findings' | 'no_findings' | 'insufficient_context'
+
+export interface ReviewResponse {
+  outcome: ReviewOutcome
+  findings: ReviewFinding[]
+}
+
 export interface ApiErrorPayload {
   error?: { code?: string; message?: string }
 }

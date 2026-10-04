@@ -62,6 +62,63 @@ describe('App', () => {
     expect(screen.getByText(/lines 4–12/)).toBeInTheDocument()
   })
 
+  it('reviews a unified diff and groups findings by severity', async () => {
+    mockFetch(
+      session,
+      { session_id: 'session-1', status: 'indexing' },
+      readyStatus,
+      {
+        outcome: 'findings',
+        findings: [
+          { severity: 'high', file: 'src/auth.ts', line: 12, issue: 'Missing validation', explanation: 'Input is used before validation.', suggested_fix: 'Validate the input first.', category: 'correctness', confidence: 0.9 },
+          { severity: 'low', file: 'src/auth.ts', line: 4, issue: 'Improve naming', explanation: 'The name is unclear.' },
+        ],
+      },
+    )
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }))
+    await screen.findByText('Session ready for repository upload.')
+    const file = new File(['zip'], 'repository.zip', { type: 'application/zip' })
+    fireEvent.change(screen.getByLabelText('Repository ZIP or RAR archive'), { target: { files: [file] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Upload repository' }))
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Ready'), { timeout: 3000 })
+
+    fireEvent.change(screen.getByLabelText('Unified diff'), { target: { value: 'diff --git a/src/auth.ts b/src/auth.ts' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Review changes' }))
+
+    expect(await screen.findByText('Missing validation')).toBeInTheDocument()
+    expect(screen.getByText('Improve naming')).toBeInTheDocument()
+    expect(screen.getByText('Suggested fix:')).toBeInTheDocument()
+    expect(screen.getByText('Category: correctness · Confidence: 90%')).toBeInTheDocument()
+    expect(screen.getByText('AI suggestions:')).toBeInTheDocument()
+  })
+
+  it('shows no-findings review outcome', async () => {
+    mockFetch(session, { session_id: 'session-1', status: 'indexing' }, readyStatus, { outcome: 'no_findings', findings: [] })
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }))
+    await screen.findByText('Session ready for repository upload.')
+    const file = new File(['zip'], 'repository.zip', { type: 'application/zip' })
+    fireEvent.change(screen.getByLabelText('Repository ZIP or RAR archive'), { target: { files: [file] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Upload repository' }))
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Ready'), { timeout: 3000 })
+    fireEvent.change(screen.getByLabelText('Unified diff'), { target: { value: 'diff --git a/a.py b/a.py' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Review changes' }))
+    expect(await screen.findByText('No actionable findings were identified in this diff.')).toBeInTheDocument()
+  })
+
+  it('rejects an empty review before sending a request', async () => {
+    mockFetch(session, { session_id: 'session-1', status: 'indexing' }, readyStatus)
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }))
+    await screen.findByText('Session ready for repository upload.')
+    const file = new File(['zip'], 'repository.zip', { type: 'application/zip' })
+    fireEvent.change(screen.getByLabelText('Repository ZIP or RAR archive'), { target: { files: [file] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Upload repository' }))
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Ready'), { timeout: 3000 })
+    expect(screen.getByRole('button', { name: 'Review changes' })).toBeDisabled()
+  })
+
   it('accepts RAR files and rejects unsupported files', async () => {
     mockFetch(session)
     render(<App />)
