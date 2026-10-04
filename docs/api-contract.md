@@ -199,6 +199,28 @@ Ticket 019 adds one bounded LangGraph workflow after diff normalization and shar
 
 The provider response must be JSON containing a `findings` array (an empty array produces `no_findings`). Findings must use the Ticket 017 schema and be grounded in a changed repository-relative file and a positive new-file line represented by an addition in the diff. Invalid JSON, invalid findings, ungrounded findings, refusals, and provider failures produce a safe workflow error rather than exposing raw provider output, prompts, source dumps, or secrets. Prompt and response size limits are enforced before and after generation.
 
+## Review endpoint
+
+`POST /api/session/{session_id}/review` accepts a bounded unified diff:
+
+```json
+{"diff":"diff --git a/src/app.py b/src/app.py\\n--- a/src/app.py\\n+++ b/src/app.py\\n@@ -1 +1 @@\\n-old()\\n+new()\\n"}
+```
+
+A successful response uses the workflow result contract:
+
+```json
+{"outcome":"findings","findings":[{"severity":"high","file":"src/app.py","line":12,"issue":"...","explanation":"...","suggested_fix":"..."}]}
+```
+
+`no_findings` returns an empty findings array. `insufficient_context` returns without invoking the LLM when the shared session index has no related references. Review errors use `{ "error": { "code": "...", "message": "..." } }`: `SESSION_NOT_FOUND` (404), `SESSION_DELETED` (410), `SESSION_NOT_READY` (409), `INVALID_DIFF` (422), `MALFORMED_LLM_OUTPUT` or `LLM_FAILED` (502), and `REVIEW_FAILED` (500). The endpoint never executes repository code, applies patches, creates a second index, or exposes provider prompts/raw responses.
+
+```bash
+curl -X POST http://localhost:8000/api/session/<session-id>/review \\
+  -H "Content-Type: application/json" \\
+  -d @review-request.json
+```
+
 ## Responses
 
 A successful upload starts indexing and returns a status summary. The exact progress fields may grow, but these fields are stable for the initial contract:

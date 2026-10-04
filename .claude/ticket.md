@@ -154,7 +154,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** the LangGraph workflow produces schema-valid, grounded findings and tested transitions for success, no-findings, insufficient-context, malformed-output, and provider-failure paths.
 
 ### TICKET-020 — Review API and tests
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 019
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 019
 - Implement `POST /api/session/{session_id}/review` over the LangGraph workflow.
 - Test graph transitions and API behavior for valid, empty, malformed, missing-file, no-finding, insufficient-context, malformed-LLM, refusal, and provider-failure cases.
 - Verify the API and graph use the same session FAISS index/retriever as Q&A and never apply patches.

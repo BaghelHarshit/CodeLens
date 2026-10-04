@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from .api_chat import CHAT_EXCEPTION_TYPES, chat_exception_handler
 from .api_chat import router as chat_router
 from .api_indexing import router as indexing_router
+from .api_review import REVIEW_EXCEPTION_TYPES, review_exception_handler
+from .api_review import router as review_router
 from .api_repository import (
     REPOSITORY_EXCEPTION_TYPES,
     repository_exception_handler,
@@ -45,12 +47,15 @@ for exception_type in (
     *SESSION_EXCEPTION_TYPES,
     *REPOSITORY_EXCEPTION_TYPES,
     *CHAT_EXCEPTION_TYPES,
+    *REVIEW_EXCEPTION_TYPES,
 ):
     handler = (
         session_exception_handler
         if exception_type in SESSION_EXCEPTION_TYPES
         else chat_exception_handler
         if exception_type in CHAT_EXCEPTION_TYPES
+        else review_exception_handler
+        if exception_type in REVIEW_EXCEPTION_TYPES
         else repository_exception_handler
     )
     app.add_exception_handler(exception_type, handler)
@@ -58,6 +63,7 @@ app.include_router(session_router)
 app.include_router(repository_router)
 app.include_router(indexing_router)
 app.include_router(chat_router)
+app.include_router(review_router)
 
 
 @app.get("/health", tags=["system"])
