@@ -117,6 +117,10 @@ The environment template is [.env.example](.env.example). Copy it to `.env` only
 
 V1 uses browser-friendly ZIP or RAR uploads rather than accepting arbitrary server filesystem paths. RAR support requires the backend `rarfile` dependency and an installed `unrar`/`unrar-free` executable. The frontend will send a `repository` field using `multipart/form-data` to the session repository endpoint. Upload and extraction limits, safe archive rules, session states, and error codes are documented in [docs/api-contract.md](docs/api-contract.md). Once indexing is ready, ask a grounded repository question with `POST /api/session/{session_id}/chat` and JSON such as `{\"question\":\"Where is authentication handled?\"}`. The response includes an answer, safe file/symbol/line references, and an `insufficient_context` flag.
 
+### Browser Q&A
+
+After repository indexing reaches `Ready`, the session page enables the **Ask about your repository** form. Each question is sent to the session-scoped `/chat` endpoint and the answer is grounded in retrieved repository context. Responses show supporting relative file paths, symbols, and line ranges when available; an insufficient-context response is presented explicitly. Questions and answers remain in the active browser session and are cleared when the session ends or is retried.
+
 ## Development principles
 
 1. Prefer simple, explicit designs over unnecessary infrastructure.

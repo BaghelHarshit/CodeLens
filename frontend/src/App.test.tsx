@@ -31,8 +31,35 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Upload repository' }))
 
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Ready'), { timeout: 3000 })
-    expect(screen.getByText(/Repository ready/)).toBeInTheDocument()
-    expect(screen.getByText(/Q&A and code review controls/)).toBeInTheDocument()
+    expect(screen.getByText('Ask about your repository')).toBeInTheDocument()
+    expect(screen.getByText(/Ask a question to see a grounded answer/)).toBeInTheDocument()
+  })
+
+  it('asks questions and renders grounded references', async () => {
+    mockFetch(
+      session,
+      { session_id: 'session-1', status: 'indexing' },
+      readyStatus,
+      {
+        answer: 'Authentication is handled in the login function.',
+        insufficient_context: false,
+        references: [{ relative_path: 'src/auth.ts', symbol_name: 'login', symbol_type: 'function', start_line: 4, end_line: 12 }],
+      },
+    )
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }))
+    await screen.findByText('Session ready for repository upload.')
+    const file = new File(['zip'], 'repository.zip', { type: 'application/zip' })
+    fireEvent.change(screen.getByLabelText('Repository ZIP or RAR archive'), { target: { files: [file] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Upload repository' }))
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Ready'), { timeout: 3000 })
+
+    fireEvent.change(screen.getByLabelText('Question'), { target: { value: 'Where is authentication handled?' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ask question' }))
+
+    expect(await screen.findByText('Authentication is handled in the login function.')).toBeInTheDocument()
+    expect(screen.getByText('src/auth.ts')).toBeInTheDocument()
+    expect(screen.getByText(/lines 4–12/)).toBeInTheDocument()
   })
 
   it('accepts RAR files and rejects unsupported files', async () => {

@@ -1,4 +1,4 @@
-import type { ApiErrorPayload, IndexingStatus, SessionResponse, UploadResponse } from '../types'
+import type { ApiErrorPayload, ChatResponse, IndexingStatus, SessionResponse, UploadResponse } from '../types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
 
@@ -56,6 +56,14 @@ export function uploadRepository(sessionId: string, file: File): Promise<UploadR
   return request<UploadResponse>(`${API_BASE_URL}/api/session/${sessionId}/repository`, {
     method: 'POST',
     body: form,
+  })
+}
+
+export function askQuestion(sessionId: string, question: string): Promise<ChatResponse> {
+  return request<ChatResponse>(`${API_BASE_URL}/api/session/${sessionId}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question }),
   })
 }
 

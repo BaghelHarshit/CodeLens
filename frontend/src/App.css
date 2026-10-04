@@ -44,4 +44,19 @@ progress { accent-color: #3659d6; display: block; margin: 0.75rem 0; width: 100%
 .error-message { background: #fff0ef; border: 1px solid #f4b8b2; border-radius: 0.6rem; color: #a32116; margin: 1.25rem 0 0; padding: 0.8rem; }
 .success-message { background: #e5f7ed; border-radius: 0.6rem; color: #176b45; margin: 1.25rem 0 0; padding: 0.8rem; }
 .feature-gate { border-top: 1px solid #edf0f5; margin: 1.5rem 0 0; padding-top: 1rem; }
-@media (max-width: 560px) { .app-shell { padding: 3rem 1rem; } .card-heading { flex-direction: column; } }
+.qa-panel { border-top: 1px solid #edf0f5; margin-top: 1.5rem; padding-top: 1.5rem; }
+.qa-panel h2 { margin-bottom: 0.5rem; }
+.question-form { margin-top: 1.25rem; }
+.question-form label { display: block; font-weight: 700; margin-bottom: 0.5rem; }
+.question-form textarea { border: 1px solid #aebbd3; border-radius: 0.6rem; display: block; min-height: 5rem; padding: 0.75rem; resize: vertical; width: 100%; }
+.question-actions { align-items: center; display: flex; justify-content: space-between; margin-top: 0.75rem; }
+.question-actions .muted { font-size: 0.85rem; }
+.qa-empty { background: #f7f9fc; border-radius: 0.6rem; margin: 1.25rem 0 0; padding: 1rem; }
+.answer-list { display: grid; gap: 1rem; margin-top: 1.25rem; }
+.answer-card { background: #f7f9fc; border: 1px solid #e4e9f2; border-radius: 0.7rem; padding: 1rem; }
+.answer-card h3 { font-size: 1rem; margin: 0 0 0.75rem; }
+.answer-card h4 { font-size: 0.9rem; margin: 1rem 0 0.5rem; }
+.answer-text { line-height: 1.6; white-space: pre-wrap; }
+.reference-list { color: #526078; font-size: 0.9rem; line-height: 1.6; margin: 0; padding-left: 1.25rem; }
+.reference-list strong { color: #172033; overflow-wrap: anywhere; }
+@media (max-width: 560px) { .app-shell { padding: 3rem 1rem; } .card-heading { flex-direction: column; } .question-actions { align-items: flex-start; flex-direction: column; gap: 0.75rem; } }

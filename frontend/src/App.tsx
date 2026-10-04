@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import './App.css'
-import { ApiError, createSession, deleteSession, getIndexingStatus, uploadRepository } from './services/api'
-import type { IndexingStatus, SessionStatus, UploadResponse } from './types'
+import { ApiError, askQuestion, createSession, deleteSession, getIndexingStatus, uploadRepository } from './services/api'
+import type { ChatResponse, IndexingStatus, SessionStatus, UploadResponse } from './types'
 
 const POLL_INTERVAL_MS = 1000
 
@@ -16,6 +16,10 @@ function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [summary, setSummary] = useState<IndexingStatus | UploadResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [question, setQuestion] = useState('')
+  const [answers, setAnswers] = useState<Array<{ question: string; response: ChatResponse }>>([])
+  const [chatError, setChatError] = useState<string | null>(null)
+  const [asking, setAsking] = useState(false)
   const [busy, setBusy] = useState(false)
   const pollingRef = useRef<number | null>(null)
   const pollStatusRef = useRef<(id: string) => Promise<void>>(() => Promise.resolve())
@@ -50,9 +54,16 @@ function App() {
   }, [pollStatus])
   useEffect(() => () => stopPolling(), [stopPolling])
 
+  function clearChat() {
+    setQuestion('')
+    setAnswers([])
+    setChatError(null)
+  }
+
   async function handleCreate() {
     setBusy(true)
     setError(null)
+    clearChat()
     try {
       const session = await createSession()
       setSessionId(session.session_id)
@@ -79,6 +90,22 @@ function App() {
       return
     }
     setSelectedFile(file)
+  }
+
+  async function handleAsk() {
+    const trimmed = question.trim()
+    if (!sessionId || status !== 'ready' || !trimmed || asking) return
+    setAsking(true)
+    setChatError(null)
+    try {
+      const response = await askQuestion(sessionId, trimmed)
+      setAnswers((current) => [...current, { question: trimmed, response }])
+      setQuestion('')
+    } catch (cause) {
+      setChatError(cause instanceof ApiError ? cause.message : 'The question could not be answered.')
+    } finally {
+      setAsking(false)
+    }
   }
 
   async function handleUpload() {
@@ -112,6 +139,7 @@ function App() {
       setStatus('created')
       setSummary(null)
       setSelectedFile(null)
+      clearChat()
     } catch (cause) {
       if (cause instanceof ApiError && (cause.status === 404 || cause.status === 410)) {
         setSessionId(null)
@@ -225,8 +253,63 @@ function App() {
         {hasSession && status !== 'ready' && status !== 'failed' && (
           <p className="muted feature-gate">Q&amp;A and code review are available when indexing reaches Ready.</p>
         )}
+        {hasSession && status === 'failed' && (
+          <p className="muted feature-gate">Q&amp;A is unavailable until the repository finishes indexing.</p>
+        )}
         {hasSession && status === 'ready' && (
-          <p className="success-message">Repository ready. Q&amp;A and code review controls will appear in the next workflow tickets.</p>
+          <section className="qa-panel" aria-labelledby="qa-heading">
+            <div>
+              <h2 id="qa-heading">Ask about your repository</h2>
+              <p className="muted">Answers are grounded in the indexed repository and include supporting references.</p>
+            </div>
+            <form className="question-form" onSubmit={(event) => { event.preventDefault(); void handleAsk() }}>
+              <label htmlFor="repository-question">Question</label>
+              <textarea
+                id="repository-question"
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                placeholder="Where is authentication handled?"
+                rows={3}
+                maxLength={4000}
+                disabled={asking}
+              />
+              <div className="question-actions">
+                <span className="muted">{question.length}/4000</span>
+                <button type="submit" disabled={asking || !question.trim()}>
+                  {asking ? 'Thinking…' : 'Ask question'}
+                </button>
+              </div>
+            </form>
+            {asking && <p className="muted" role="status">Searching the repository…</p>}
+            {chatError && <p className="error-message" role="alert">{chatError}</p>}
+            {answers.length === 0 && !asking && <p className="muted qa-empty">Ask a question to see a grounded answer.</p>}
+            <div className="answer-list">
+              {answers.map(({ question: askedQuestion, response }, index) => (
+                <article className="answer-card" key={`${askedQuestion}-${index}`}>
+                  <h3>{askedQuestion}</h3>
+                  <p className="answer-text">{response.answer}</p>
+                  {response.insufficient_context && <p className="muted">There was not enough repository context to provide a grounded answer.</p>}
+                  {response.references.length > 0 && (
+                    <div>
+                      <h4>References</h4>
+                      <ul className="reference-list">
+                        {response.references.map((reference, referenceIndex) => (
+                          <li key={`${reference.relative_path}-${reference.start_line ?? 'na'}-${referenceIndex}`}>
+                            <strong>{reference.relative_path}</strong>
+                            {reference.symbol_name && <span> · {reference.symbol_name}</span>}
+                            {reference.symbol_type && <span> ({reference.symbol_type})</span>}
+                            {(reference.start_line || reference.end_line) && (
+                              <span> · lines {reference.start_line ?? '?'}–{reference.end_line ?? reference.start_line ?? '?'}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          </section>
         )}
       </section>
     </main>

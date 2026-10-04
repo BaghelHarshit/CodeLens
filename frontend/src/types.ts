@@ -27,6 +27,21 @@ export interface IndexingStatus {
   error?: string
 }
 
+export interface ChatReference {
+  relative_path: string
+  symbol_name?: string | null
+  symbol_type?: string | null
+  language?: string | null
+  start_line?: number | null
+  end_line?: number | null
+}
+
+export interface ChatResponse {
+  answer: string
+  references: ChatReference[]
+  insufficient_context: boolean
+}
+
 export interface ApiErrorPayload {
   error?: { code?: string; message?: string }
 }
