@@ -1,15 +1,16 @@
 """HTTP endpoint for bounded, grounded repository code review."""
 
-from typing import cast
+from typing import Literal, cast
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from .config import Settings
 from .indexing import IndexingRegistry
 from .llm import LLMProvider, create_llm_provider
 from .review import ReviewWorkflowError, run_review_workflow
+from .review.git_source import GitSourceError, latest_commit_diff
 from .retrieval import RetrievalNotReadyError
 from .session import SessionManager
 from .session.models import SessionDeletedError, SessionNotFoundError
@@ -18,9 +19,25 @@ router = APIRouter(prefix="/api/session", tags=["review"])
 
 
 class ReviewRequest(BaseModel):
-    """Validated unified diff submitted for review."""
+    """Validated review source request."""
 
-    diff: str = Field(min_length=1, max_length=200_000)
+    source: Literal["manual", "last_commit"] = "manual"
+    diff: str | None = Field(default=None, min_length=1, max_length=200_000)
+
+    @model_validator(mode="before")
+    @classmethod
+    def default_legacy_source(cls, values: object) -> object:
+        if isinstance(values, dict) and "source" not in values:
+            return {**values, "source": "manual"}
+        return values
+
+    @model_validator(mode="after")
+    def validate_source(self) -> "ReviewRequest":
+        if self.source == "manual" and self.diff is None:
+            raise ValueError("manual review requires a diff")
+        if self.source == "last_commit" and self.diff is not None:
+            raise ValueError("last-commit review does not accept a diff")
+        return self
 
 
 def _manager(request: Request) -> SessionManager:
@@ -49,9 +66,13 @@ def review(request: Request, session_id: str, payload: ReviewRequest) -> dict[st
     session = _manager(request).get(session_id)
     if session.state.value == "deleted":
         raise SessionDeletedError("Session has been deleted.")
+    diff = payload.diff
+    if payload.source == "last_commit":
+        diff = latest_commit_diff(session.repository_dir)
+    assert diff is not None
     result = run_review_workflow(
         session_id=session_id,
-        diff=payload.diff,
+        diff=diff,
         registry=_registry(request),
         llm=_llm(request, _settings(request)),
     )
@@ -68,6 +89,18 @@ def review_exception_handler(_: Request, exc: Exception) -> JSONResponse:
         isinstance(exc, ReviewWorkflowError) and exc.code == "SESSION_NOT_READY"
     ):
         status, code, message = 409, "SESSION_NOT_READY", "The repository is not ready for review."
+    elif isinstance(exc, GitSourceError):
+        git_statuses = {
+            "GIT_METADATA_MISSING": (422, "GIT_METADATA_MISSING", "The uploaded repository does not contain Git metadata."),
+            "GIT_REPOSITORY_UNAVAILABLE": (422, "GIT_REPOSITORY_UNAVAILABLE", "The repository is unavailable for last-commit review."),
+            "EMPTY_LAST_COMMIT": (422, "EMPTY_LAST_COMMIT", "The latest Git commit contains no changes."),
+            "MALFORMED_LAST_COMMIT": (422, "MALFORMED_LAST_COMMIT", "The latest Git commit diff is invalid."),
+            "GIT_DIFF_TOO_LARGE": (422, "GIT_DIFF_TOO_LARGE", "The latest Git commit diff is too large."),
+            "GIT_TIMEOUT": (502, "GIT_COMMAND_FAILED", "Git could not read the repository."),
+        }
+        status, code, message = git_statuses.get(
+            exc.code, (422, "GIT_COMMAND_FAILED", "Git could not read the repository.")
+        )
     elif isinstance(exc, ReviewWorkflowError):
         if exc.code == "INVALID_DIFF":
             status, code, message = 422, "INVALID_DIFF", "The review diff is invalid."
@@ -87,4 +120,5 @@ REVIEW_EXCEPTION_TYPES = (
     SessionDeletedError,
     RetrievalNotReadyError,
     ReviewWorkflowError,
+    GitSourceError,
 )

@@ -180,7 +180,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** a valid `.rar` upload can be indexed through the same pipeline as ZIP, invalid/unsafe RAR input fails safely, and the contract, UI, tests, and documentation agree on both archive formats.
 
 ### CL-002 — Git last-commit review source
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 020, 023
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 020, 023
 - Add an option in the code-review UI to review changes from the repository's latest Git commit without requiring the user to paste a unified diff.
 - Keep the existing manual unified-diff input and review flow available as an alternative.
 - Extract the latest commit diff from a Git-aware local repository using a safe, read-only Git operation, normalize it through the existing unified-diff parser, and reuse the current review workflow, shared retrieval service, and session index.

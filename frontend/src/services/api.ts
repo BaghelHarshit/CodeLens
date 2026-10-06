@@ -1,4 +1,4 @@
-import type { ApiErrorPayload, ChatResponse, IndexingStatus, ReviewResponse, SessionResponse, UploadResponse } from '../types'
+import type { ApiErrorPayload, ChatResponse, IndexingStatus, ReviewResponse, ReviewSource, SessionResponse, UploadResponse } from '../types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
 
@@ -67,11 +67,11 @@ export function askQuestion(sessionId: string, question: string): Promise<ChatRe
   })
 }
 
-export function submitReview(sessionId: string, diff: string): Promise<ReviewResponse> {
+export function submitReview(sessionId: string, source: ReviewSource, diff?: string): Promise<ReviewResponse> {
   return request<ReviewResponse>(`${API_BASE_URL}/api/session/${sessionId}/review`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ diff }),
+    body: JSON.stringify(source === 'manual' ? { source, diff } : { source }),
   })
 }
 

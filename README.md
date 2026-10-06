@@ -123,7 +123,7 @@ After repository indexing reaches `Ready`, the session page enables the **Ask ab
 
 ### Browser code review
 
-When indexing reaches `Ready`, the **Review code changes** panel accepts a unified diff up to 200,000 characters and sends it to `POST /api/session/{session_id}/review`. Findings are grouped by critical, high, medium, low, or informational severity and include repository-relative file, new-file line, issue, explanation, and optional suggested fix, category, and confidence. The UI distinguishes no findings and insufficient context, reports provider errors safely, and states that suggestions are advisory: CodeLens never applies patches or modifies the repository automatically.
+When indexing reaches `Ready`, the **Review code changes** panel can accept a manual unified diff up to 200,000 characters or review the latest commit from the uploaded repository. Latest-commit review requires usable Git metadata and a readable `HEAD`; it supports root commits and rejects empty commits clearly. Both sources use `POST /api/session/{session_id}/review`, the same parser, shared retrieval index, and workflow. Findings are grouped by critical, high, medium, low, or informational severity and include repository-relative file, new-file line, issue, explanation, and optional suggested fix, category, and confidence. The UI distinguishes no findings and insufficient context, reports provider errors safely, and states that suggestions are advisory: CodeLens never applies patches or modifies the repository automatically.
 
 ## Development principles
 

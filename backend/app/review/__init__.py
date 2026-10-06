@@ -10,6 +10,7 @@ from .workflow import (
     run_review_workflow,
 )
 from .diff import parse_unified_diff
+from .git_source import GitSourceError, latest_commit_diff
 from .models import (
     ChangedFile,
     DiffErrorCode,
@@ -45,4 +46,6 @@ __all__ = [
     "normalize_review_response",
     "parse_unified_diff",
     "run_review_workflow",
+    "GitSourceError",
+    "latest_commit_diff",
 ]

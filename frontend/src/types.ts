@@ -43,6 +43,7 @@ export interface ChatResponse {
 }
 
 export type ReviewSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info'
+export type ReviewSource = 'manual' | 'last_commit'
 
 export interface ReviewFinding {
   severity: ReviewSeverity

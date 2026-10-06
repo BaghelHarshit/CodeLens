@@ -155,7 +155,25 @@ Insufficient-context example:
 
 ## Code review contract
 
-Ticket 017 selects a bounded unified diff as the review input. The future review endpoint (Ticket 020) accepts JSON with one required field:
+Code review accepts either a manually supplied bounded unified diff or the latest commit from the uploaded local Git repository. The legacy `{\"diff\": \"...\"}` form remains manual review; clients may also send an explicit source:
+
+```json
+{"source":"manual","diff":"diff --git a/src/app.py b/src/app.py\\n--- a/src/app.py\\n+++ b/src/app.py\\n@@ -1 +1 @@\\n-old()\\n+new()\\n"}
+```
+
+Latest-commit review sends:
+
+```json
+{"source":"last_commit"}
+```
+
+The repository must contain usable Git metadata and a readable `HEAD`. Root commits are supported. A commit with no patch is rejected as `EMPTY_LAST_COMMIT`; repositories without metadata, unavailable commits, malformed Git output, command failures, and oversized patches produce stable safe Git errors without server paths, stderr, or raw output. Git access is read-only and never applies patches or executes repository content.
+
+Ticket 017 selects a bounded unified diff as the normalized review input. Both sources are normalized into that same input and use the same retrieval index and workflow. The endpoint accepts JSON with the following forms:
+
+```json
+{"diff":"diff --git a/src/app.py b/src/app.py\\n--- a/src/app.py\\n+++ b/src/app.py\\n@@ -1 +1 @@\\n-old()\\n+new()\\n"}
+```
 
 ```json
 {"diff":"diff --git a/src/app.py b/src/app.py\\n--- a/src/app.py\\n+++ b/src/app.py\\n@@ -1 +1 @@\\n-old()\\n+new()\\n"}
@@ -202,7 +220,7 @@ The provider response must be JSON containing a `findings` array (an empty array
 
 ## Review endpoint
 
-`POST /api/session/{session_id}/review` accepts a bounded unified diff:
+`POST /api/session/{session_id}/review` accepts a manual diff or `{\"source\":\"last_commit\"}`:
 
 ```json
 {"diff":"diff --git a/src/app.py b/src/app.py\\n--- a/src/app.py\\n+++ b/src/app.py\\n@@ -1 +1 @@\\n-old()\\n+new()\\n"}
@@ -214,7 +232,7 @@ A successful response uses the workflow result contract:
 {"outcome":"findings","findings":[{"severity":"high","file":"src/app.py","line":12,"issue":"...","explanation":"...","suggested_fix":"..."}]}
 ```
 
-`no_findings` returns an empty findings array. `insufficient_context` returns without invoking the LLM when the shared session index has no related references. Review errors use `{ "error": { "code": "...", "message": "..." } }`: `SESSION_NOT_FOUND` (404), `SESSION_DELETED` (410), `SESSION_NOT_READY` (409), `INVALID_DIFF` (422), `MALFORMED_LLM_OUTPUT` or `LLM_FAILED` (502), and `REVIEW_FAILED` (500). The endpoint never executes repository code, applies patches, creates a second index, or exposes provider prompts/raw responses.
+`no_findings` returns an empty findings array. `insufficient_context` returns without invoking the LLM when the shared session index has no related references. Review errors use `{ "error": { "code": "...", "message": "..." } }`: `SESSION_NOT_FOUND` (404), `SESSION_DELETED` (410), `SESSION_NOT_READY` (409), `INVALID_DIFF` (422), `GIT_METADATA_MISSING`, `GIT_REPOSITORY_UNAVAILABLE`, `GIT_COMMIT_UNAVAILABLE`, `EMPTY_LAST_COMMIT`, `MALFORMED_LAST_COMMIT`, or `GIT_DIFF_TOO_LARGE` (422), `GIT_COMMAND_FAILED` (502), `MALFORMED_LLM_OUTPUT` or `LLM_FAILED` (502), and `REVIEW_FAILED` (500). The endpoint never executes repository code, applies patches, creates a second index, or exposes provider prompts/raw responses.
 
 ```bash
 curl -X POST http://localhost:8000/api/session/<session-id>/review \\

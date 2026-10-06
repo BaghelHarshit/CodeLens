@@ -145,7 +145,9 @@ def _extract_members(archive: Any, extraction_dir: Path, settings: Settings) -> 
                 continue
             _ensure_regular_file(info)
             file_size = int(getattr(info, "file_size", 0))
-            if _is_ignored(relative, settings.ignored_directories):
+            # Preserve .git so last-commit review can inspect uploaded Git metadata;
+            # discovery still excludes it from indexed source files.
+            if _is_ignored(relative, settings.ignored_directories - {".git"}):
                 skipped += 1
                 warnings.append(f"Skipped ignored path: {key}")
                 continue

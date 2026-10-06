@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import './App.css'
 import { ApiError, askQuestion, createSession, deleteSession, getIndexingStatus, submitReview, uploadRepository } from './services/api'
-import type { ChatResponse, IndexingStatus, ReviewFinding, ReviewResponse, ReviewSeverity, SessionStatus, UploadResponse } from './types'
+import type { ChatResponse, IndexingStatus, ReviewFinding, ReviewResponse, ReviewSeverity, ReviewSource, SessionStatus, UploadResponse } from './types'
 
 const POLL_INTERVAL_MS = 1000
 const MAX_REVIEW_DIFF_CHARS = 200_000
@@ -23,6 +23,7 @@ function App() {
   const [chatError, setChatError] = useState<string | null>(null)
   const [asking, setAsking] = useState(false)
   const [reviewDiff, setReviewDiff] = useState('')
+  const [reviewSource, setReviewSource] = useState<ReviewSource>('manual')
   const [reviewResult, setReviewResult] = useState<ReviewResponse | null>(null)
   const [reviewError, setReviewError] = useState<string | null>(null)
   const [reviewing, setReviewing] = useState(false)
@@ -75,12 +76,12 @@ function App() {
   async function handleReview() {
     const trimmed = reviewDiff.trim()
     if (!sessionId || status !== 'ready' || reviewing) return
-    if (!trimmed) {
+    if (reviewSource === 'manual' && !trimmed) {
       setReviewError('Paste a unified diff to review.')
       setReviewResult(null)
       return
     }
-    if (trimmed.length > MAX_REVIEW_DIFF_CHARS) {
+    if (reviewSource === 'manual' && trimmed.length > MAX_REVIEW_DIFF_CHARS) {
       setReviewError(`The diff must be ${MAX_REVIEW_DIFF_CHARS.toLocaleString()} characters or fewer.`)
       setReviewResult(null)
       return
@@ -89,7 +90,7 @@ function App() {
     setReviewError(null)
     setReviewResult(null)
     try {
-      setReviewResult(await submitReview(sessionId, trimmed))
+      setReviewResult(await submitReview(sessionId, reviewSource, reviewSource === 'manual' ? trimmed : undefined))
     } catch (cause) {
       setReviewError(cause instanceof ApiError ? cause.message : 'The code review could not be completed.')
     } finally {
@@ -357,9 +358,15 @@ function App() {
           <section className="review-panel" aria-labelledby="review-heading">
             <div>
               <h2 id="review-heading">Review code changes</h2>
-              <p className="muted">Paste a unified diff to find issues using your repository context.</p>
+              <p className="muted">Choose a manual diff or review the latest commit from the uploaded Git repository.</p>
             </div>
             <p className="review-notice"><strong>AI suggestions:</strong> findings are advisory. CodeLens never modifies your code automatically.</p>
+            <fieldset className="review-source">
+              <legend>Review source</legend>
+              <label><input type="radio" name="review-source" value="manual" checked={reviewSource === 'manual'} onChange={() => setReviewSource('manual')} disabled={reviewing} /> Manual unified diff</label>
+              <label><input type="radio" name="review-source" value="last_commit" checked={reviewSource === 'last_commit'} onChange={() => setReviewSource('last_commit')} disabled={reviewing} /> Latest Git commit</label>
+              {reviewSource === 'last_commit' && <p className="muted">The uploaded repository must include Git metadata. CodeLens reads the latest commit without modifying the repository.</p>}
+            </fieldset>
             <form className="review-form" onSubmit={(event) => { event.preventDefault(); void handleReview() }}>
               <label htmlFor="review-diff">Unified diff</label>
               <textarea
@@ -369,11 +376,11 @@ function App() {
                 placeholder={'diff --git a/src/app.py b/src/app.py\n+++ b/src/app.py\n@@ -1 +1 @@'}
                 rows={8}
                 maxLength={MAX_REVIEW_DIFF_CHARS + 1}
-                disabled={reviewing}
+                disabled={reviewing || reviewSource !== 'manual'}
               />
               <div className="question-actions">
-                <span className="muted">{reviewDiff.length.toLocaleString()}/{MAX_REVIEW_DIFF_CHARS.toLocaleString()}</span>
-                <button type="submit" disabled={reviewing || !reviewDiff.trim()}>{reviewing ? 'Reviewing…' : 'Review changes'}</button>
+                <span className="muted">{reviewSource === 'manual' ? `${reviewDiff.length.toLocaleString()}/${MAX_REVIEW_DIFF_CHARS.toLocaleString()}` : 'Latest commit selected'}</span>
+                <button type="submit" disabled={reviewing || (reviewSource === 'manual' && !reviewDiff.trim())}>{reviewing ? 'Reviewing…' : 'Review changes'}</button>
               </div>
             </form>
             {reviewing && <p className="muted" role="status">Analyzing changed code and repository context…</p>}
