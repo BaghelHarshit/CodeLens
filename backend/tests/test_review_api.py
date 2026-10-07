@@ -8,7 +8,6 @@ from app.llm.fake import FakeLLM
 from app.main import app
 from app.session import SessionManager
 
-
 DIFF = """diff --git a/src/app.py b/src/app.py
 --- a/src/app.py
 +++ b/src/app.py

@@ -80,9 +80,7 @@ def test_chat_enforces_question_limit_and_missing_session(tmp_path) -> None:
     assert missing.json()["error"]["code"] == "SESSION_NOT_FOUND"
 
     session = manager.create()
-    too_long = client.post(
-        f"/api/session/{session.session_id}/chat", json={"question": "x" * 4001}
-    )
+    too_long = client.post(f"/api/session/{session.session_id}/chat", json={"question": "x" * 4001})
     assert too_long.status_code == 422
 
 

@@ -33,7 +33,11 @@ def create_session(request: Request) -> dict[str, str]:
 def delete_session(request: Request, session_id: str) -> dict[str, str]:
     """Delete a session and its temporary workspace."""
 
-    get_session_manager(request).delete(session_id)
+    manager = get_session_manager(request)
+    manager.delete(session_id)
+    registry = getattr(request.app.state, "indexing_registry", None)
+    if registry is not None:
+        registry.discard(session_id)
     return _session_response(session_id, "deleted")
 
 

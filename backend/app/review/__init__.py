@@ -1,14 +1,6 @@
 """Provider-neutral code-review contracts."""
 
 from .context import ChangedCodeContext, ReviewContext, ReviewContextLimits, build_review_context
-from .workflow import (
-    ReviewWorkflowError,
-    ReviewWorkflowLimits,
-    build_review_graph,
-    build_review_prompt,
-    normalize_review_response,
-    run_review_workflow,
-)
 from .diff import parse_unified_diff
 from .git_source import GitSourceError, latest_commit_diff
 from .models import (
@@ -22,6 +14,14 @@ from .models import (
     ReviewResult,
     ReviewValidationError,
     Severity,
+)
+from .workflow import (
+    ReviewWorkflowError,
+    ReviewWorkflowLimits,
+    build_review_graph,
+    build_review_prompt,
+    normalize_review_response,
+    run_review_workflow,
 )
 
 __all__ = [

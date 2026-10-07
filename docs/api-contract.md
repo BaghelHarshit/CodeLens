@@ -258,6 +258,14 @@ A successful upload starts indexing and returns a status summary. The exact prog
 
 A status response uses the same `session_id` and `status`, and may include `progress`, `files_seen`, `files_indexed`, `files_skipped`, `chunks_created`, `warnings`, and `error`.
 
+## Security and resource limits
+
+All repository, diff, retrieval, and provider inputs are treated as untrusted data. Archives are staged before replacement, extracted member bytes are checked while streaming, and unsafe paths, collisions, links, special entries, malformed archives, and limit violations are rejected without leaving a partial repository. Source discovery and parsing never execute repository content and enforce file, byte, encoding, and path-boundary checks.
+
+Indexing is session-scoped and deletion-safe: a background indexing task cannot publish a ready or failed state after its session is deleted, and deleting a session removes its workspace and registry artifacts. Git review uses fixed read-only commands with no shell, bounded output, a timeout, and repository-bound working directories.
+
+Retrieved context, review prompts, diffs, and provider responses are bounded before and after provider calls. Repository text is explicitly treated as evidence rather than instructions, so prompt-like comments cannot change the workflow. API errors do not expose absolute paths, keys, prompts, source dumps, stderr, or raw provider output.
+
 ## Errors
 
 Errors use JSON and must not disclose absolute filesystem paths or secrets:

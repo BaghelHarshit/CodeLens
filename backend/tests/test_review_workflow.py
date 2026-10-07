@@ -2,16 +2,15 @@ import json
 
 import pytest
 
+from app.chunking.models import CodeChunk
 from app.indexing import IndexingRegistry, SearchResult
-from app.llm import FakeLLM, LLMGenerationError, LLMRefusalError
+from app.llm import FakeLLM, LLMGenerationError
 from app.review import (
     ReviewWorkflowError,
     normalize_review_response,
     parse_unified_diff,
     run_review_workflow,
 )
-from app.chunking.models import CodeChunk
-
 
 DIFF = """diff --git a/src/app.py b/src/app.py
 --- a/src/app.py

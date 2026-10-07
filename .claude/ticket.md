@@ -219,12 +219,13 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Verification:** Reconciled `SPEC.md`, `README.md`, `docs/api-contract.md`, `.env.example`, and this ticket list with Gemini provider adapters, ZIP/RAR ingestion, and manual/latest-commit review. Confirmed with `git diff --check`; the credential-free quality suite is run as part of ticket verification.
 
 ### TICKET-025 — Security and resource-limit review
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 006, 012, 020, 024, 024A, CL-002
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 006, 012, 020, 024, 024A, CL-002
 - Test traversal, symlinks, oversized inputs/files, malformed encodings, prompt injection in source comments, isolation, and abandoned sessions.
 - Confirm no code execution, secret leakage, unsafe logging, Git command injection, unsafe Git repository access, or raw server-path exposure.
 - Audit and enforce limits across uploads, archives, extracted files/bytes, discovered files/bytes, parsing/chunks, embeddings, retrieval, prompt/context, provider output, review diffs, request timeouts, and concurrent work.
 - Verify background indexing cannot write into deleted/retried sessions and stale tasks cannot publish ready state after deletion.
 - **Done when:** the security checklist is complete, every required limit is implemented or explicitly justified, and mitigations have automated coverage or a documented manual check.
+- **Verification:** Added deletion-safe indexing guards, registry cleanup, streamed extraction byte validation, lifecycle regression coverage, and documented the security boundary and resource-limit behavior in `docs/api-contract.md`.
 
 ### TICKET-025A — Session expiration and cleanup lifecycle
 - **Status:** TODO | **Priority:** P0 | **Depends on:** 005, 012, 025

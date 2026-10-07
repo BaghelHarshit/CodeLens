@@ -60,7 +60,7 @@ def build_review_graph(
     review_limits: ReviewLimits | None = None,
     context_limits: ReviewContextLimits | None = None,
     workflow_limits: ReviewWorkflowLimits | None = None,
-):
+) -> Any:
     """Build one bounded review graph for a session and provider."""
     bounds = workflow_limits or ReviewWorkflowLimits()
 
@@ -162,7 +162,10 @@ def run_review_workflow(
         context_limits=context_limits,
         workflow_limits=workflow_limits,
     ).invoke({"diff": diff})
-    return state["result"]
+    result = state.get("result")
+    if not isinstance(result, ReviewResult):
+        raise ReviewWorkflowError("REVIEW_FAILED", "The review did not produce a valid result.")
+    return result
 
 
 def build_review_prompt(review: ReviewInput, context: ReviewContext, max_chars: int) -> str:

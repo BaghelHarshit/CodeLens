@@ -53,12 +53,16 @@ class IndexingRegistry:
             current = self._statuses.get(session.session_id)
             if current is not None and current.state == SessionState.INDEXING.value:
                 raise RuntimeError("indexing is already in progress")
+            if session.state is not SessionState.INDEXING:
+                return
             self._statuses[session.session_id] = IndexStatus(session.session_id)
         try:
             self._run(session, settings)
         except Exception:
             with self._lock:
-                status = self._statuses[session.session_id]
+                status = self._statuses.get(session.session_id)
+                if status is None or session.state.value == SessionState.DELETED.value:
+                    return
                 status.state = SessionState.FAILED.value
                 status.stage = "failed"
                 status.progress = 100
@@ -68,11 +72,20 @@ class IndexingRegistry:
                 session.state = SessionState.FAILED
             return
         with self._lock:
-            self._statuses[session.session_id].state = SessionState.READY.value
-            self._statuses[session.session_id].stage = "complete"
-            self._statuses[session.session_id].progress = 100
+            status = self._statuses.get(session.session_id)
+            if status is None or session.state.value == SessionState.DELETED.value:
+                return
+            status.state = SessionState.READY.value
+            status.stage = "complete"
+            status.progress = 100
         if session.state is SessionState.INDEXING:
             session.state = SessionState.READY
+
+    def discard(self, session_id: str) -> None:
+        """Forget status and index artifacts when a session is deleted."""
+        with self._lock:
+            self._statuses.pop(session_id, None)
+            self._indexes.pop(session_id, None)
 
     def status(self, session_id: str) -> IndexStatus | None:
         with self._lock:
@@ -132,7 +145,9 @@ class IndexingRegistry:
 
     def _update(self, session_id: str, stage: str, progress: int, **values: object) -> None:
         with self._lock:
-            status = self._statuses[session_id]
+            status = self._statuses.get(session_id)
+            if status is None or status.state != SessionState.INDEXING.value:
+                return
             status.stage = stage
             status.progress = progress
             for key, value in values.items():

@@ -9,9 +9,9 @@ from pydantic import BaseModel, Field, model_validator
 from .config import Settings
 from .indexing import IndexingRegistry
 from .llm import LLMProvider, create_llm_provider
+from .retrieval import RetrievalNotReadyError
 from .review import ReviewWorkflowError, run_review_workflow
 from .review.git_source import GitSourceError, latest_commit_diff
-from .retrieval import RetrievalNotReadyError
 from .session import SessionManager
 from .session.models import SessionDeletedError, SessionNotFoundError
 
@@ -91,11 +91,31 @@ def review_exception_handler(_: Request, exc: Exception) -> JSONResponse:
         status, code, message = 409, "SESSION_NOT_READY", "The repository is not ready for review."
     elif isinstance(exc, GitSourceError):
         git_statuses = {
-            "GIT_METADATA_MISSING": (422, "GIT_METADATA_MISSING", "The uploaded repository does not contain Git metadata."),
-            "GIT_REPOSITORY_UNAVAILABLE": (422, "GIT_REPOSITORY_UNAVAILABLE", "The repository is unavailable for last-commit review."),
-            "EMPTY_LAST_COMMIT": (422, "EMPTY_LAST_COMMIT", "The latest Git commit contains no changes."),
-            "MALFORMED_LAST_COMMIT": (422, "MALFORMED_LAST_COMMIT", "The latest Git commit diff is invalid."),
-            "GIT_DIFF_TOO_LARGE": (422, "GIT_DIFF_TOO_LARGE", "The latest Git commit diff is too large."),
+            "GIT_METADATA_MISSING": (
+                422,
+                "GIT_METADATA_MISSING",
+                "The uploaded repository does not contain Git metadata.",
+            ),
+            "GIT_REPOSITORY_UNAVAILABLE": (
+                422,
+                "GIT_REPOSITORY_UNAVAILABLE",
+                "The repository is unavailable for last-commit review.",
+            ),
+            "EMPTY_LAST_COMMIT": (
+                422,
+                "EMPTY_LAST_COMMIT",
+                "The latest Git commit contains no changes.",
+            ),
+            "MALFORMED_LAST_COMMIT": (
+                422,
+                "MALFORMED_LAST_COMMIT",
+                "The latest Git commit diff is invalid.",
+            ),
+            "GIT_DIFF_TOO_LARGE": (
+                422,
+                "GIT_DIFF_TOO_LARGE",
+                "The latest Git commit diff is too large.",
+            ),
             "GIT_TIMEOUT": (502, "GIT_COMMAND_FAILED", "Git could not read the repository."),
         }
         status, code, message = git_statuses.get(

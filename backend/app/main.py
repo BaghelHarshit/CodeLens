@@ -6,8 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from .api_chat import CHAT_EXCEPTION_TYPES, chat_exception_handler
 from .api_chat import router as chat_router
 from .api_indexing import router as indexing_router
-from .api_review import REVIEW_EXCEPTION_TYPES, review_exception_handler
-from .api_review import router as review_router
 from .api_repository import (
     REPOSITORY_EXCEPTION_TYPES,
     repository_exception_handler,
@@ -15,6 +13,8 @@ from .api_repository import (
 from .api_repository import (
     router as repository_router,
 )
+from .api_review import REVIEW_EXCEPTION_TYPES, review_exception_handler
+from .api_review import router as review_router
 from .api_session import (
     SESSION_EXCEPTION_TYPES,
     session_exception_handler,

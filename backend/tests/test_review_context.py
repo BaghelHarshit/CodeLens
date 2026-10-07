@@ -2,7 +2,6 @@ from app.chunking.models import CodeChunk
 from app.indexing import IndexingRegistry, SearchResult
 from app.review import ReviewContextLimits, build_review_context, parse_unified_diff
 
-
 DIFF = """diff --git a/src/app.py b/src/app.py
 --- a/src/app.py
 +++ b/src/app.py

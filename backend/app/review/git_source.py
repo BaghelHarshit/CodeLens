@@ -21,9 +21,7 @@ class GitSourceError(RuntimeError):
 _GIT_TIMEOUT_SECONDS = 10
 
 
-def latest_commit_diff(
-    repository_dir: Path, limits: ReviewLimits | None = None
-) -> str:
+def latest_commit_diff(repository_dir: Path, limits: ReviewLimits | None = None) -> str:
     """Return the latest commit patch without modifying or executing repository data."""
     if not repository_dir.is_dir() or repository_dir.is_symlink():
         raise GitSourceError("GIT_REPOSITORY_UNAVAILABLE", "The repository is unavailable.")
@@ -46,7 +44,9 @@ def latest_commit_diff(
     except GitSourceError as error:
         if error.code == "GIT_DIFF_TOO_LARGE":
             raise
-        raise GitSourceError("GIT_COMMIT_UNAVAILABLE", "The latest Git commit is unavailable.") from error
+        raise GitSourceError(
+            "GIT_COMMIT_UNAVAILABLE", "The latest Git commit is unavailable."
+        ) from error
 
     diff = diff.replace("\r\n", "\n").replace("\r", "\n")
     if not diff.strip():
@@ -55,8 +55,12 @@ def latest_commit_diff(
         parse_unified_diff(diff, limits)
     except ReviewValidationError as error:
         if "DIFF_TOO_LARGE" in str(error):
-            raise GitSourceError("GIT_DIFF_TOO_LARGE", "The latest Git commit diff is too large.") from error
-        raise GitSourceError("MALFORMED_LAST_COMMIT", "The latest Git commit diff is invalid.") from error
+            raise GitSourceError(
+                "GIT_DIFF_TOO_LARGE", "The latest Git commit diff is too large."
+            ) from error
+        raise GitSourceError(
+            "MALFORMED_LAST_COMMIT", "The latest Git commit diff is invalid."
+        ) from error
     return diff
 
 
@@ -76,8 +80,14 @@ def _run_git(repository_dir: Path, args: list[str], max_chars: int) -> str:
             shell=False,
         )
     except (FileNotFoundError, OSError, subprocess.TimeoutExpired) as error:
-        code = "GIT_TIMEOUT" if isinstance(error, subprocess.TimeoutExpired) else "GIT_COMMAND_FAILED"
-        message = "Git did not respond in time." if code == "GIT_TIMEOUT" else "Git could not read the repository."
+        code = (
+            "GIT_TIMEOUT" if isinstance(error, subprocess.TimeoutExpired) else "GIT_COMMAND_FAILED"
+        )
+        message = (
+            "Git did not respond in time."
+            if code == "GIT_TIMEOUT"
+            else "Git could not read the repository."
+        )
         raise GitSourceError(code, message) from error
     if completed.returncode != 0:
         raise GitSourceError("GIT_COMMAND_FAILED", "Git could not read the repository.")

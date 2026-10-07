@@ -135,9 +135,15 @@ class ReviewFinding:
         for name, value in (("issue", self.issue), ("explanation", self.explanation)):
             if not isinstance(value, str) or not value.strip() or len(value) > 4_000:
                 raise ReviewValidationError(f"finding {name} is invalid")
-        for name, value in (("suggested_fix", self.suggested_fix), ("category", self.category)):
-            if value is not None and (not value.strip() or len(value) > 256):
-                raise ReviewValidationError(f"finding {name} is invalid")
+        optional_text: tuple[tuple[str, str | None], ...] = (
+            ("suggested_fix", self.suggested_fix),
+            ("category", self.category),
+        )
+        for optional_name, optional_value in optional_text:
+            if optional_value is not None and (
+                not optional_value.strip() or len(optional_value) > 256
+            ):
+                raise ReviewValidationError(f"finding {optional_name} is invalid")
         if self.confidence is not None and not 0 <= self.confidence <= 1:
             raise ReviewValidationError("finding confidence must be between 0 and 1")
 

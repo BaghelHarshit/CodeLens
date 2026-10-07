@@ -25,6 +25,7 @@ def test_create_and_delete_session_api(tmp_path: Path) -> None:
     assert deleted.status_code == 200
     assert deleted.json() == {"session_id": payload["session_id"], "status": "deleted"}
     assert not (tmp_path / payload["session_id"]).exists()
+    assert app.state.indexing_registry.status(payload["session_id"]) is None
 
 
 def test_delete_unknown_session_uses_safe_error(tmp_path: Path) -> None:

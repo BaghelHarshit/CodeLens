@@ -77,16 +77,21 @@ def test_invalid_question_and_provider_failure_are_safe() -> None:
         ready = True
 
         def search(self, query: str, top_k: int) -> list[SearchResult]:
-            return [SearchResult(1.0, SimpleNamespace(
-                chunk_id="one",
-                relative_path="src/main.py",
-                symbol_name="run",
-                symbol_type="function",
-                language="python",
-                source="return 'ok'",
-                start_line=2,
-                end_line=2,
-            ))]
+            return [
+                SearchResult(
+                    1.0,
+                    SimpleNamespace(
+                        chunk_id="one",
+                        relative_path="src/main.py",
+                        symbol_name="run",
+                        symbol_type="function",
+                        language="python",
+                        source="return 'ok'",
+                        start_line=2,
+                        end_line=2,
+                    ),
+                )
+            ]
 
     provider_failed = IndexingRegistry()
     provider_failed._indexes["session"] = ReadyIndex()  # type: ignore[assignment]

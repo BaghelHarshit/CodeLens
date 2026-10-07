@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from pathlib import PurePosixPath
 
 from tree_sitter import Node, Parser
-from tree_sitter_languages import get_language
+from tree_sitter_languages import get_language  # type: ignore[import-untyped]
 
 from ..discovery.models import DiscoveredFile, DiscoveryResult
 from ..session.models import Session

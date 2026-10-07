@@ -165,8 +165,28 @@ def _extract_members(archive: Any, extraction_dir: Path, settings: Settings) -> 
         for member in validated:
             target = extraction_dir.joinpath(*member.relative_path.parts)
             target.parent.mkdir(parents=True, exist_ok=True)
+            written = 0
             with archive.open(member.info, "r") as source, target.open("xb") as output:
-                shutil.copyfileobj(source, output, length=1024 * 1024)
+                while True:
+                    chunk = source.read(min(1024 * 1024, settings.max_file_bytes - written + 1))
+                    if not chunk:
+                        break
+                    written += len(chunk)
+                    if (
+                        written > settings.max_file_bytes
+                        or extracted_bytes - int(getattr(member.info, "file_size", 0)) + written
+                        > settings.max_extracted_bytes
+                    ):
+                        raise IngestionError(
+                            "EXTRACTION_LIMIT_EXCEEDED",
+                            "The extracted repository is too large.",
+                            413,
+                        )
+                    output.write(chunk)
+            if written != int(getattr(member.info, "file_size", 0)):
+                raise IngestionError(
+                    "INVALID_ARCHIVE", "The archive member could not be read safely."
+                )
             accepted += 1
     return IngestionResult(accepted, skipped, extracted_bytes, tuple(warnings))
 
