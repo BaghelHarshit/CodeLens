@@ -203,39 +203,87 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Done when:** findings, no-findings, loading, and failure states are understandable.
 
 ### TICKET-024 — Accessibility and frontend resilience
-- **Status:** TODO | **Priority:** P1 | **Depends on:** 022, 023
+- **Status:** DONE | **Priority:** P1 | **Depends on:** 022, 023
 - Add semantic markup, labels, keyboard navigation, focus states, contrast, responsive layout, timeout/network/session-expiry handling, and component tests.
+- **Verification:** Frontend Vitest component suite (8 tests), ESLint, TypeScript typecheck, and production build pass. Native forms, labelled progress/live regions, visible focus states, mobile control layout, and 404/410/session-expiry recovery were verified in the implementation.
 - **Done when:** critical flows are keyboard-usable and tested.
 
 ## Phase 5 — Hardening and release
 
+### TICKET-024A — Specification and implementation alignment
+- **Status:** TODO | **Priority:** P0 | **Depends on:** 024
+- Reconcile SPEC.md, this ticket list, README.md, and API documentation with the implemented Gemini provider, provider abstractions, RAR support, and Git last-commit review source.
+- Document deliberate deviations from the original specification, including provider selection, environment variables, supported archive formats, and review-source behavior.
+- Remove contradictory OpenAI/Gemini claims from authoritative setup, architecture, and technology documentation without changing already completed implementation tickets.
+- **Done when:** authoritative documents agree with the implemented V1 architecture and provider configuration, and all documented commands and environment variables are accurate.
+
 ### TICKET-025 — Security and resource-limit review
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 006, 012, 020, 024
+- **Status:** TODO | **Priority:** P0 | **Depends on:** 006, 012, 020, 024, 024A, CL-002
 - Test traversal, symlinks, oversized inputs/files, malformed encodings, prompt injection in source comments, isolation, and abandoned sessions.
-- Confirm no code execution, secret leakage, or unsafe logging; add request/file/chunk/context/time/concurrency limits.
-- **Done when:** security checklist and mitigations/tests are documented.
+- Confirm no code execution, secret leakage, unsafe logging, Git command injection, unsafe Git repository access, or raw server-path exposure.
+- Audit and enforce limits across uploads, archives, extracted files/bytes, discovered files/bytes, parsing/chunks, embeddings, retrieval, prompt/context, provider output, review diffs, request timeouts, and concurrent work.
+- Verify background indexing cannot write into deleted/retried sessions and stale tasks cannot publish ready state after deletion.
+- **Done when:** the security checklist is complete, every required limit is implemented or explicitly justified, and mitigations have automated coverage or a documented manual check.
+
+### TICKET-025A — Session expiration and cleanup lifecycle
+- **Status:** TODO | **Priority:** P0 | **Depends on:** 005, 012, 025
+- Define session TTL/expiration behavior for abandoned sessions and stale temporary directories.
+- Clean up interrupted uploads, failed/indexing sessions, expired sessions, and stale workspaces after restart where applicable.
+- Make cleanup safe under concurrent status polling, deletion, retry, and background indexing; preserve the temporary-root boundary and idempotency guarantees.
+- Add tests for abandoned sessions, cleanup races, interrupted background work, startup cleanup, and explicit deletion.
+- **Done when:** every session termination path cleans repository, index, and metadata data without deleting outside the configured temporary root.
 
 ### TICKET-026 — Observability and diagnostics
-- **Status:** TODO | **Priority:** P1 | **Depends on:** 012, 016, 020
-- Add safe structured logs, correlation IDs, stage durations/counts, health/readiness, and stable error codes.
-- **Done when:** failures are diagnosable without keys, full source, prompts, or responses in logs.
+- **Status:** TODO | **Priority:** P1 | **Depends on:** 012, 016, 020, 025, 025A, CL-002
+- Add safe structured logs, correlation IDs, stage durations/counts, health/readiness, and stable error codes for ingestion, indexing, Q&A, review, Git-source, and cleanup failures.
+- Define log redaction rules and ensure keys, full source, prompts, raw provider responses, stderr, Git paths, and sensitive request data are never logged.
+- **Done when:** failures are diagnosable without secrets or repository disclosure, and diagnostics are tested for representative success and failure paths.
+
+### TICKET-026A — API contract conformance
+- **Status:** TODO | **Priority:** P0 | **Depends on:** 020, 021, 022, 023, CL-002, 026
+- Verify documented request/response shapes against FastAPI routes and schemas for session creation/deletion, upload, status, Q&A, manual review, and latest-commit review.
+- Verify frontend API helpers, TypeScript types, status normalization, stable error codes, CORS behavior, and session-expiry handling match the backend contract.
+- Verify generated OpenAPI or equivalent contract documentation and all README/API examples remain accurate.
+- **Done when:** backend schemas, frontend clients, documentation, OpenAPI output, and contract tests agree without undocumented compatibility behavior.
 
 ### TICKET-027 — Full integration and smoke tests
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 025, 026
-- Test create → ingest → index → Q&A → review → delete with fake providers.
-- Verify contracts, CORS, references, shared index, cleanup, and all SPEC success criteria.
-- **Done when:** all critical checks pass or have a documented manual check.
+- **Status:** TODO | **Priority:** P0 | **Depends on:** 025A, 026, 026A
+- Test create → ingest → index → Q&A → manual review → latest-commit review → delete with fake providers.
+- Verify contracts, CORS, references, shared index, Git source behavior, cleanup, provider-independent operation, and all SPEC success criteria.
+- Include ZIP and RAR fixtures, Git and non-Git repositories, empty/root commits, provider failures, indexing failures, session expiry, and deletion races.
+- **Done when:** all critical checks pass or have a documented manual check, and the complete local workflow is covered end to end.
+
+### TICKET-027A — Browser smoke test
+- **Status:** TODO | **Priority:** P1 | **Depends on:** 024, 025, 026A, 027
+- Run the frontend and backend together in a browser-driven or equivalent user-level check.
+- Create a session, upload a fixture repository, wait for indexing, ask a Q&A question, submit a manual review, submit a latest-commit review, observe safe errors, and end the session.
+- **Done when:** the primary user journey works through the browser without relying on developer tools, and failures are understandable.
 
 ### TICKET-028 — Final documentation and demo
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 027
-- Document prerequisites, setup, environment, commands, architecture, API examples, limits, supported languages, temporary data, safety, and limitations.
-- Add a fixture-based demo checklist.
-- **Done when:** a new developer can run and demo the complete workflow from README.
+- **Status:** TODO | **Priority:** P0 | **Depends on:** 024A, 027, 027A
+- Document prerequisites, setup, environment, commands, architecture, API examples, limits, supported languages, ZIP/RAR requirements, Git metadata requirements, temporary data, safety, limitations, provider configuration, and API compatibility/versioning policy.
+- Add a fixture-based demo checklist covering Q&A, manual review, latest-commit review, error states, cleanup, and session deletion.
+- **Done when:** a new developer can run and demo the complete local V1 workflow from README without undocumented steps.
+
+### TICKET-028A — Live provider verification
+- **Status:** TODO | **Priority:** P0 | **Depends on:** 014, 015, 019, 027
+- Add an opt-in smoke command or documented manual check using configured Gemini credentials for embeddings, Q&A, and code review.
+- Verify valid credentials, missing credentials, invalid model/configuration, timeout, rate-limit, malformed/refusal, and provider-failure behavior.
+- Keep normal automated tests offline and ensure live verification never logs keys, prompts, full source, or raw provider responses.
+- **Done when:** live provider setup and all three provider-backed workflows are verified without making credentials mandatory for tests or local contract checks.
+
+### TICKET-028B — Local launch and demo verification
+- **Status:** TODO | **Priority:** P0 | **Depends on:** 027, 027A, 028
+- Verify clean-environment setup from README, backend startup, frontend startup, environment file setup, ports, CORS, browser-to-API connectivity, and RAR extraction prerequisites.
+- Run the fixture/demo checklist using documented commands and record any platform-specific prerequisites or limitations.
+- **Done when:** a new developer can clone, configure, start, and demonstrate V1 using only the documented local setup.
 
 ### TICKET-029 — V1 release
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 028
-- Run all gates, check history and secrets, tag a reproducible V1 release, and record deferred work.
-- **Done when:** the release is tested, documented, and aligned with SPEC.md.
+- **Status:** TODO | **Priority:** P0 | **Depends on:** 028, 028A, 028B
+- Run all backend/frontend quality gates, contract checks, security checks, integration/browser smoke tests, and opt-in live-provider verification.
+- Check history, generated artifacts, dependency/license notices, secrets, reproducibility, and documented deferred work.
+- Tag a reproducible V1 release and record the final supported feature matrix and known limitations.
+- **Done when:** the release is tested, documented, reproducible, aligned with SPEC.md, and all non-deferred V1 success criteria are satisfied.
 
 ## Deferred final phase — GitHub integration
 
@@ -254,8 +302,12 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 2. 005–012: session/indexing milestone.
 3. 013–016: first useful demo — local fixture → index → Q&A.
 4. 017–020: code-review milestone, including the bounded LangGraph workflow.
-5. 021–024: usable UI.
-6. 025–029: hardening and V1 release.
-7. 030: GitHub only after V1 is complete.
+5. 021–024 plus CL-001/CL-002: usable UI and review sources.
+6. 024A: specification and implementation alignment.
+7. 025–026A: security, cleanup, diagnostics, and contract conformance.
+8. 027–027A: integration and browser smoke coverage.
+9. 028–028B: documentation, live-provider, and local-launch verification.
+10. 029: V1 release.
+11. 030: GitHub only after V1 is complete.
 
-Parallelize only after dependencies are complete. Keep SPEC.md authoritative when this list and implementation differ; document deliberate architectural changes.
+Parallelize only after dependencies are complete. Keep SPEC.md authoritative when this list and implementation differ; document deliberate architectural changes. The added completion tickets address lifecycle cleanup, contract conformance, browser verification, provider verification, local launch, and documentation alignment without changing the status or scope of completed tickets.

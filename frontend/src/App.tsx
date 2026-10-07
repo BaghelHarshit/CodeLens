@@ -28,6 +28,7 @@ function App() {
   const [reviewError, setReviewError] = useState<string | null>(null)
   const [reviewing, setReviewing] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [sessionExpired, setSessionExpired] = useState(false)
   const pollingRef = useRef<number | null>(null)
   const pollStatusRef = useRef<(id: string) => Promise<void>>(() => Promise.resolve())
 
@@ -37,6 +38,21 @@ function App() {
       pollingRef.current = null
     }
   }, [])
+
+  const expireSession = useCallback(() => {
+    stopPolling()
+    setSessionId(null)
+    setStatus('created')
+    setSummary(null)
+    setSelectedFile(null)
+    setSessionExpired(true)
+    clearChat()
+    clearReview()
+  }, [stopPolling])
+
+  function isSessionExpired(cause: unknown): boolean {
+    return cause instanceof ApiError && (cause.status === 404 || cause.status === 410 || cause.code === 'SESSION_EXPIRED')
+  }
 
   const pollStatus = useCallback(
     async (id: string) => {
@@ -50,11 +66,15 @@ function App() {
           setError(next.error ?? 'Indexing failed. You can end this session and try again.')
         }
       } catch (cause) {
+        if (isSessionExpired(cause)) {
+          expireSession()
+          return
+        }
         setError(cause instanceof ApiError ? cause.message : 'Indexing status could not be loaded.')
         stopPolling()
       }
     },
-    [stopPolling],
+    [expireSession, stopPolling],
   )
   useEffect(() => {
     pollStatusRef.current = pollStatus
@@ -92,6 +112,10 @@ function App() {
     try {
       setReviewResult(await submitReview(sessionId, reviewSource, reviewSource === 'manual' ? trimmed : undefined))
     } catch (cause) {
+      if (isSessionExpired(cause)) {
+        expireSession()
+        return
+      }
       setReviewError(cause instanceof ApiError ? cause.message : 'The code review could not be completed.')
     } finally {
       setReviewing(false)
@@ -105,6 +129,7 @@ function App() {
   async function handleCreate() {
     setBusy(true)
     setError(null)
+    setSessionExpired(false)
     clearChat()
     clearReview()
     try {
@@ -113,6 +138,7 @@ function App() {
       setStatus(session.status)
       setSummary(null)
       setSelectedFile(null)
+      setSessionExpired(false)
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'A session could not be created.')
     } finally {
@@ -145,6 +171,10 @@ function App() {
       setAnswers((current) => [...current, { question: trimmed, response }])
       setQuestion('')
     } catch (cause) {
+      if (isSessionExpired(cause)) {
+        expireSession()
+        return
+      }
       setChatError(cause instanceof ApiError ? cause.message : 'The question could not be answered.')
     } finally {
       setAsking(false)
@@ -164,6 +194,10 @@ function App() {
       setSelectedFile(null)
       if (result.status === 'indexing') void pollStatus(sessionId)
     } catch (cause) {
+      if (isSessionExpired(cause)) {
+        expireSession()
+        return
+      }
       setStatus('failed')
       setError(cause instanceof ApiError ? cause.message : 'The repository could not be uploaded.')
     } finally {
@@ -211,6 +245,7 @@ function App() {
       setStatus(session.status)
       setSummary(null)
       setSelectedFile(null)
+      setSessionExpired(false)
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'A new session could not be created.')
     } finally {
@@ -237,7 +272,7 @@ function App() {
             <h2 id="workspace-heading">Start a temporary session</h2>
             <p className="muted">Your repository is used only for this temporary analysis session.</p>
           </div>
-          <span className={`status-pill status-${status}`} role="status">{statusText}</span>
+          <span className={`status-pill status-${status}`} role="status" aria-live="polite">{statusText}</span>
         </div>
 
         {!hasSession ? (
@@ -278,7 +313,7 @@ function App() {
           <div className="progress-panel" aria-label="Indexing progress">
             <strong>{statusText}</strong>
             {'progress' in summary && typeof summary.progress === 'number' && (
-              <progress max="1" value={summary.progress} />
+              <progress aria-label="Indexing progress" max="1" value={summary.progress} />
             )}
             <p className="muted">
               {'files_indexed' in summary && summary.files_indexed !== undefined
@@ -291,6 +326,11 @@ function App() {
           </div>
         )}
 
+        {sessionExpired && (
+          <p className="error-message" role="alert">
+            This session has expired or is no longer available. Create a new session to continue.
+          </p>
+        )}
         {error && <p className="error-message" role="alert">{error}</p>}
         {!hasSession && <p className="muted feature-gate">Q&amp;A and code review become available after indexing a repository.</p>}
         {hasSession && status !== 'ready' && status !== 'failed' && (
@@ -311,6 +351,7 @@ function App() {
               <label htmlFor="repository-question">Question</label>
               <textarea
                 id="repository-question"
+                aria-describedby="question-count"
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
                 placeholder="Where is authentication handled?"
@@ -319,13 +360,13 @@ function App() {
                 disabled={asking}
               />
               <div className="question-actions">
-                <span className="muted">{question.length}/4000</span>
+                <span className="muted" id="question-count">{question.length}/4000</span>
                 <button type="submit" disabled={asking || !question.trim()}>
                   {asking ? 'Thinking…' : 'Ask question'}
                 </button>
               </div>
             </form>
-            {asking && <p className="muted" role="status">Searching the repository…</p>}
+            {asking && <p className="muted" role="status" aria-live="polite">Searching the repository…</p>}
             {chatError && <p className="error-message" role="alert">{chatError}</p>}
             {answers.length === 0 && !asking && <p className="muted qa-empty">Ask a question to see a grounded answer.</p>}
             <div className="answer-list">
@@ -371,6 +412,7 @@ function App() {
               <label htmlFor="review-diff">Unified diff</label>
               <textarea
                 id="review-diff"
+                aria-describedby="review-count"
                 value={reviewDiff}
                 onChange={(event) => { setReviewDiff(event.target.value); setReviewError(null) }}
                 placeholder={'diff --git a/src/app.py b/src/app.py\n+++ b/src/app.py\n@@ -1 +1 @@'}
@@ -379,11 +421,11 @@ function App() {
                 disabled={reviewing || reviewSource !== 'manual'}
               />
               <div className="question-actions">
-                <span className="muted">{reviewSource === 'manual' ? `${reviewDiff.length.toLocaleString()}/${MAX_REVIEW_DIFF_CHARS.toLocaleString()}` : 'Latest commit selected'}</span>
+                <span className="muted" id="review-count">{reviewSource === 'manual' ? `${reviewDiff.length.toLocaleString()}/${MAX_REVIEW_DIFF_CHARS.toLocaleString()}` : 'Latest commit selected'}</span>
                 <button type="submit" disabled={reviewing || (reviewSource === 'manual' && !reviewDiff.trim())}>{reviewing ? 'Reviewing…' : 'Review changes'}</button>
               </div>
             </form>
-            {reviewing && <p className="muted" role="status">Analyzing changed code and repository context…</p>}
+            {reviewing && <p className="muted" role="status" aria-live="polite">Analyzing changed code and repository context…</p>}
             {reviewError && <p className="error-message" role="alert">{reviewError}</p>}
             {reviewResult?.outcome === 'no_findings' && <p className="success-message">No actionable findings were identified in this diff.</p>}
             {reviewResult?.outcome === 'insufficient_context' && <p className="muted review-empty">There was not enough indexed repository context to ground this review.</p>}
