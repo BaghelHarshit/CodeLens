@@ -53,10 +53,11 @@ The user provides a **local repository**.
 
 The system does NOT retrieve or clone repositories from GitHub in V1.
 
-Possible local input mechanisms may include:
+The implemented V1 transport is a browser-friendly archive upload:
 
--   Local repository path, or
--   Uploading/providing a repository directory through the application.
+-   ZIP archives are supported directly.
+-   RAR archives are supported when the backend `rarfile` dependency and an `unrar`/`unrar-free` executable are installed.
+-   The browser never submits an arbitrary server filesystem path.
 
 The implementation should choose the simplest practical mechanism for
 local repository ingestion.
@@ -191,7 +192,7 @@ microservices.
 
 ## LLM
 
--   OpenAI API
+-   Provider-neutral LLM interface with Google Gemini as the configured live provider
 
 The LLM is used for:
 
@@ -209,12 +210,9 @@ Relevant repository context should first be retrieved using RAG.
 
 ## Embeddings
 
-Use an OpenAI embedding model for repository code chunks and user/review
-queries.
+Use the provider-neutral embedding interface for repository code chunks and user/review queries. Google Gemini is the configured live provider, while deterministic fake embeddings support credential-free tests and local checks.
 
-The exact embedding model can be configured through environment
-variables/configuration rather than hard-coded throughout the
-application.
+The provider and model are configured through environment variables rather than hard-coded throughout the application. The current live configuration uses `CODELENS_EMBEDDING_PROVIDER=gemini`, `GEMINI_API_KEY`, and `GEMINI_EMBEDDING_MODEL`; `CODELENS_EMBEDDING_PROVIDER=fake` is the offline default.
 
 ------------------------------------------------------------------------
 
@@ -365,7 +363,7 @@ Polling may be used for long-running indexing/review status if needed.
                          │                     │
                          └──────────┬──────────┘
                                     ▼
-                              OpenAI LLM
+                              provider-neutral Gemini LLM
                                     │
                                     ▼
                                 React UI
@@ -471,7 +469,7 @@ Top-K Relevant Code Chunks
 Build Context
       │
       ▼
-OpenAI LLM
+provider-neutral Gemini LLM
       │
       ▼
 Answer
@@ -521,7 +519,7 @@ Repository Index    Local Code Changes
       Relevant Repository Code
                │
                ▼
-          OpenAI LLM
+          provider-neutral Gemini LLM
                │
                ▼
           Code Review
@@ -586,7 +584,7 @@ repository index**.
                 Relevant Code Chunks
                          │
                          ▼
-                     OpenAI LLM
+                     provider-neutral Gemini LLM
                          │
               ┌──────────┴──────────┐
               ▼                     ▼
@@ -660,8 +658,7 @@ Response:
 
 ## Upload/Provide Local Repository
 
-The exact transport can be chosen during implementation based on the
-simplest practical local-repository input mechanism.
+The implemented transport is `multipart/form-data` with a `repository` ZIP or RAR archive. The archive is validated and extracted into a session-local staging directory before indexing starts.
 
 Conceptually:
 
@@ -699,10 +696,7 @@ references.
 POST /api/session/{session_id}/review
 ```
 
-The implementation should accept the local code-review context needed
-for the review, such as a local git diff or selected changes.
-
-The exact request format can be finalized during implementation.
+The endpoint accepts either a bounded manual unified diff (`source: "manual"`) or `source: "last_commit"`, which reads the latest commit from the uploaded local Git repository using fixed, read-only Git commands. Both sources are normalized and use the same parser, retriever, and workflow; no patches are applied.
 
 ------------------------------------------------------------------------
 
@@ -1024,7 +1018,7 @@ The V1 architecture is intentionally limited to:
                   │                 │
                   └────────┬────────┘
                            ▼
-                      OpenAI LLM
+                      provider-neutral Gemini LLM
                            │
                            ▼
                     FastAPI Backend
@@ -1088,8 +1082,8 @@ When implementing CodeLens, follow these principles:
   -------------------- ------------------------------------------
   Frontend             React + TypeScript + Vite
   Backend              Python + FastAPI
-  LLM                  OpenAI API
-  Embeddings           OpenAI Embeddings
+  LLM                  Provider-neutral adapter (Gemini live provider)
+  Embeddings           Provider-neutral adapter (Gemini live provider)
   Code Parser          Tree-sitter
   Vector Store         FAISS
   RAG                  LangChain
@@ -1104,7 +1098,19 @@ When implementing CodeLens, follow these principles:
 
 ------------------------------------------------------------------------
 
-# 22. Project Success Criteria
+# 22. Deliberate implementation deviations
+
+The original draft specified OpenAI as the only provider and left local transport and review-source details open. The implemented V1 deliberately changes those choices without changing the core RAG architecture:
+
+- Gemini is the configured live provider for embeddings and LLM requests, behind provider-neutral interfaces; fake providers remain the offline default.
+- Local repositories arrive as validated ZIP or RAR uploads. RAR extraction requires the `rarfile` package and an installed `unrar`/`unrar-free` executable.
+- Code review accepts either a bounded manual unified diff or a read-only latest-commit Git source. Both use the same parser, shared FAISS index, retrieval service, and workflow.
+
+These changes do not add GitHub ingestion, persistence, code execution, automatic patch application, or a separate review architecture.
+
+------------------------------------------------------------------------
+
+# 23. Project Success Criteria
 
 V1 is considered successful when a user can:
 

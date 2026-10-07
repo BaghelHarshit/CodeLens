@@ -6,7 +6,7 @@ Statuses: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`. Complete tickets in dependen
 
 ## Definition of done
 
-Deliver a local-repository, session-based CodeLens V1 using React + TypeScript + Vite, FastAPI + Python, Tree-sitter, OpenAI embeddings/LLM, FAISS, and one shared RAG index for Q&A and code review. V1 excludes databases, persistent storage, GitHub ingestion, microservices, Redis, arbitrary code execution, and automatic patch application.
+Deliver a local-repository, session-based CodeLens V1 using React + TypeScript + Vite, FastAPI + Python, Tree-sitter, provider-neutral Gemini-backed embeddings/LLM adapters, FAISS, and one shared RAG index for Q&A and code review. V1 excludes databases, persistent storage, GitHub ingestion, microservices, Redis, arbitrary code execution, and automatic patch application.
 
 ---
 
@@ -29,7 +29,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 
 ### TICKET-003 — Scaffold backend and frontend
 - **Status:** DONE | **Priority:** P0 | **Depends on:** 001, 002
-- Configure Python dependencies: FastAPI, Uvicorn, Tree-sitter, FAISS, OpenAI/LangChain, validation, and tests.
+- Configure Python dependencies: FastAPI, Uvicorn, Tree-sitter, FAISS, provider adapters/LangChain, validation, and tests.
 - Scaffold React + TypeScript + Vite and scripts.
 - Add configuration loading, environment validation, CORS, health endpoint, and minimal UI shell.
 - **Done when:** both apps install and run with documented commands.
@@ -38,7 +38,7 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 - **Status:** DONE | **Priority:** P0 | **Depends on:** 003
 - Configure backend tests, formatting, linting, and type checks; configure frontend tests, linting, and type checks.
 - Add a safe fixture repository, offline fake providers, and CI if appropriate.
-- **Done when:** one command runs checks without OpenAI credentials.
+- **Done when:** one command runs checks without Gemini credentials.
 
 ## Phase 1 — Sessions and indexing
 
@@ -211,11 +211,12 @@ Deliver a local-repository, session-based CodeLens V1 using React + TypeScript +
 ## Phase 5 — Hardening and release
 
 ### TICKET-024A — Specification and implementation alignment
-- **Status:** TODO | **Priority:** P0 | **Depends on:** 024
+- **Status:** DONE | **Priority:** P0 | **Depends on:** 024
 - Reconcile SPEC.md, this ticket list, README.md, and API documentation with the implemented Gemini provider, provider abstractions, RAR support, and Git last-commit review source.
 - Document deliberate deviations from the original specification, including provider selection, environment variables, supported archive formats, and review-source behavior.
 - Remove contradictory OpenAI/Gemini claims from authoritative setup, architecture, and technology documentation without changing already completed implementation tickets.
 - **Done when:** authoritative documents agree with the implemented V1 architecture and provider configuration, and all documented commands and environment variables are accurate.
+- **Verification:** Reconciled `SPEC.md`, `README.md`, `docs/api-contract.md`, `.env.example`, and this ticket list with Gemini provider adapters, ZIP/RAR ingestion, and manual/latest-commit review. Confirmed with `git diff --check`; the credential-free quality suite is run as part of ticket verification.
 
 ### TICKET-025 — Security and resource-limit review
 - **Status:** TODO | **Priority:** P0 | **Depends on:** 006, 012, 020, 024, 024A, CL-002

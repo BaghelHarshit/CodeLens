@@ -2,17 +2,17 @@
 
 CodeLens is an AI-powered repository intelligence and code-review tool. It accepts a local code repository, indexes meaningful source-code units, and uses retrieval-augmented generation (RAG) to answer repository questions and review local changes.
 
-This repository is currently being built as a fresher-level SDE/AI placement project. The product scope is defined in [SPEC.md](SPEC.md), and the implementation work is tracked in [.claude/ticket.md](.claude/ticket.md).
+This repository is a fresher-level SDE/AI placement project. The product scope is defined in [SPEC.md](SPEC.md), the API is specified in [docs/api-contract.md](docs/api-contract.md), and implementation work is tracked in [.claude/ticket.md](.claude/ticket.md).
 
 ## V1 scope
 
-The planned V1 stack is:
+The implemented V1 stack is:
 
 - **Frontend:** React, TypeScript, and Vite
 - **Backend:** Python and FastAPI
 - **Code parsing:** Tree-sitter
 - **Embeddings:** Google Gemini API (with a deterministic offline fake provider)
-- **LLM:** provider adapter configured separately
+- **LLM:** provider-neutral adapter with Google Gemini as the live provider and a deterministic fake provider for offline checks
 - **Vector store:** temporary FAISS index
 - **RAG/workflow:** LangChain and LangGraph where useful
 - **Storage:** temporary, session-scoped server filesystem
@@ -25,13 +25,14 @@ The backend will index a local repository once per temporary session. Q&A and co
 - TICKET-001 — Git project setup and baseline: **DONE**
 - TICKET-002 — Local repository input contract: **DONE**
 - TICKET-003 — Backend and frontend scaffold: **DONE**
-- TICKET-004 onward — planned
+- TICKET-004 through TICKET-024, CL-001, and CL-002 — **DONE**
+- TICKET-024A onward — planned hardening and release work
 
 V1 deliberately does **not** include GitHub retrieval, a database, persistent user accounts/history, microservices, Redis, Kubernetes, autonomous code modification, automatic patch application, or execution of repository code. GitHub retrieval is deferred until after the V1 release.
 
 ## Current status
 
-TICKET-003 scaffolds the FastAPI backend and React/Vite frontend. Repository ingestion and runtime workflows are planned in the following tickets.
+The implemented V1 workflow creates an isolated temporary session, safely ingests ZIP/RAR repositories, discovers and indexes source code, and exposes shared-index Q&A and code review. Review accepts either a manual unified diff or the latest commit from uploaded Git metadata.
 
 ## Run locally
 
@@ -59,7 +60,7 @@ npm install
 npm run dev
 ```
 
-Open the Vite URL (normally `http://localhost:5173`). Set `VITE_API_BASE_URL` in `.env` when the API is hosted elsewhere. Backend settings are loaded from the root `.env` file using the names in [.env.example](.env.example). OpenAI credentials are not needed for the scaffold health check or UI shell.
+Open the Vite URL (normally `http://localhost:5173`). Set `VITE_API_BASE_URL` in `.env` when the API is hosted elsewhere. Backend settings are loaded from the root `.env` file using the names in [.env.example](.env.example). Gemini credentials are not needed for the quality suite or offline local checks; use the fake providers by default. Live Gemini operation requires `GEMINI_API_KEY`. RAR uploads additionally require `rarfile` and an installed `unrar`/`unrar-free` executable.
 
 ### Quality gates
 
@@ -69,7 +70,7 @@ Run the complete credential-free quality suite from the repository root:
 python scripts/check.py
 ```
 
-The command runs backend tests, Ruff formatting and lint checks, mypy, frontend typechecking, the production build, ESLint, and Vitest. It uses only the safe fixture repository and offline provider fakes; no `.env`, OpenAI key, network provider, or generated session data is required.
+The command runs backend tests, Ruff formatting and lint checks, mypy, frontend typechecking, the production build, ESLint, and Vitest. It uses only the safe fixture repository and offline provider fakes; no `.env`, Gemini key, network provider, or generated session data is required.
 
 Individual checks can be run while diagnosing failures:
 
@@ -93,8 +94,8 @@ The frontend lint and test scripts are included for ticket-level quality gates; 
 
 ```text
 .
-├── backend/       # FastAPI application (later ticket)
-├── frontend/      # React/Vite application (later ticket)
+├── backend/       # FastAPI application
+├── frontend/      # React/Vite application
 ├── tests/         # Shared and integration tests
 ├── docs/          # Shared API and implementation contracts
 ├── SPEC.md        # Product and architecture specification
@@ -104,7 +105,7 @@ The frontend lint and test scripts are included for ticket-level quality gates; 
 
 ## Initial setup
 
-Prerequisites and exact dependency commands will be added with TICKET-003. For now, clone or open the repository and review the specification and ticket list:
+For a fresh checkout, install the documented dependencies, copy `.env.example` to `.env` when configuration is needed, and review the specification and API contract:
 
 ```text
 SPEC.md
@@ -132,7 +133,7 @@ When indexing reaches `Ready`, the **Review code changes** panel can accept a ma
 3. Keep sessions isolated and temporary.
 4. Retrieve relevant code before sending context to the LLM; do not send the whole repository by default.
 5. Preserve file, symbol, language, and line metadata through the indexing pipeline.
-6. Document deliberate deviations from [SPEC.md](SPEC.md).
+6. The implemented deviations from the original draft are deliberate: Gemini replaces OpenAI behind provider-neutral adapters, ZIP/RAR uploads are the local transport, and review supports both manual diffs and latest-commit Git sources.
 
 ## License
 

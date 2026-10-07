@@ -1,6 +1,10 @@
 # CodeLens V1 API Contract
 
-This document defines the local-repository input contract for TICKET-002. It is a frontend/backend contract; implementation is delivered by later tickets.
+This document defines the implemented local-repository, Q&A, and code-review API contract. It is the frontend/backend contract for the current V1 implementation.
+
+## Provider configuration
+
+The API is provider-neutral. The default `fake` embedding and LLM providers support credential-free local checks. Live requests use Google Gemini when `CODELENS_EMBEDDING_PROVIDER=gemini` and/or `CODELENS_LLM_PROVIDER=gemini`, with `GEMINI_API_KEY` and the corresponding model settings configured in `.env`. Provider failures are returned through stable safe errors; keys, prompts, source dumps, and raw provider responses are never exposed.
 
 ## Repository input
 
