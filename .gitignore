@@ -63,3 +63,6 @@ temp/
 
 # Claude Code temporary worktrees
 .claude/worktrees/
+
+# Local interview preparation notes
+CODELENS_INTERVIEW_NOTES.md
